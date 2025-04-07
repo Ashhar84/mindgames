@@ -1,0 +1,1388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NPAT - Multiplayer with Learning AI</title>
+    <style>
+        /* Base Styles */
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #4cc9f0;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --purple: #7209b7;
+            --pink: #f72585;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #f5f7fa;
+            color: var(--dark);
+            line-height: 1.6;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        /* Game Elements */
+        .panel {
+            background-color: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .active-panel {
+            display: block;
+        }
+        
+        .game-modes {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .letter-display {
+            font-size: 4rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 15px 0;
+            color: var(--primary);
+        }
+        
+        .timer {
+            font-size: 1.5rem;
+            text-align: center;
+            margin: 15px 0;
+            color: var(--dark);
+        }
+        
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .category {
+            background-color: var(--light);
+            padding: 15px;
+            border-radius: 8px;
+        }
+        
+        .category h3 {
+            margin-bottom: 10px;
+            color: var(--secondary);
+        }
+        
+        .category input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        /* Answer Comparison */
+        .answer-comparison {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+        
+        .player-answer {
+            display: flex;
+            margin-bottom: 10px;
+            align-items: flex-start;
+            flex-wrap: wrap;
+        }
+        
+        .player-name {
+            font-weight: bold;
+            min-width: 120px;
+            margin-right: 10px;
+        }
+        
+        .answer-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            flex: 1;
+        }
+        
+        .answer-item {
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+        }
+        
+        /* Buttons */
+        .btn {
+            padding: 12px 24px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: var(--secondary);
+            color: white;
+        }
+        
+        .btn-accent {
+            background-color: var(--accent);
+            color: var(--dark);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-purple {
+            background-color: var(--purple);
+            color: white;
+        }
+        
+        .btn-pink {
+            background-color: var(--pink);
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn:active {
+            transform: translateY(1px);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        /* Settings */
+        .setting-option {
+            margin-bottom: 15px;
+        }
+        
+        .setting-option label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .setting-option input, 
+        .setting-option select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .modal-content {
+            background-color: white;
+            padding: 25px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Player List */
+        .player-list {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--light);
+            border-radius: 8px;
+        }
+        
+        .player-list h3 {
+            margin-bottom: 10px;
+        }
+        
+        .player-list ul {
+            list-style-type: none;
+        }
+        
+        .player-list li {
+            padding: 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .player-status {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background-color: #ccc;
+        }
+        
+        .player-status.ready {
+            background-color: var(--success);
+        }
+        
+        .player-status.not-ready {
+            background-color: var(--warning);
+        }
+        
+        /* Room Code */
+        .room-code {
+            font-family: monospace;
+            font-size: 1.3rem;
+            letter-spacing: 3px;
+            background-color: var(--dark);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 5px;
+            display: inline-block;
+            margin: 10px 0;
+        }
+        
+        /* Category Grid */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        /* Mode Options */
+        .mode-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .mode-option {
+            background-color: var(--light);
+            padding: 20px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mode-option:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .mode-option h3 {
+            color: var(--primary);
+            margin-bottom: 10px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .letter-display {
+                font-size: 3rem;
+            }
+            
+            .categories {
+                grid-template-columns: 1fr;
+            }
+            
+            .mode-options {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>NPAT</h1>
+            <p>Play with friends or challenge our learning AI!</p>
+        </header>
+        
+        <div class="game-modes">
+            <button class="btn btn-primary" id="howToPlayBtn">
+                How to Play
+            </button>
+            <button class="btn btn-secondary" id="settingsBtn">
+                Settings
+            </button>
+            <button class="btn btn-pink" id="playModeBtn">
+                Play Mode
+            </button>
+            <button class="btn btn-purple" id="categoriesBtn">
+                Categories
+            </button>
+        </div>
+        
+        <!-- Game Panels -->
+        <div class="panel" id="settingsPanel">
+            <h2>Game Settings</h2>
+            <div class="setting-option">
+                <label for="timeLimit">Time per round (seconds):</label>
+                <input type="number" id="timeLimit" min="10" max="300" value="60">
+            </div>
+            <div class="setting-option">
+                <label for="rounds">Number of rounds:</label>
+                <input type="number" id="rounds" min="1" max="20" value="5">
+            </div>
+            <div class="setting-option">
+                <label for="duplicatePenalty">Points deduction for duplicates:</label>
+                <input type="number" id="duplicatePenalty" min="0" max="10" value="2">
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
+                <button class="btn btn-danger" id="backFromSettingsBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="gameModePanel">
+            <h2>Select Game Mode</h2>
+            <div class="mode-options">
+                <div class="mode-option" id="singlePlayerMode">
+                    <h3>Single Player</h3>
+                    <p>Play by yourself</p>
+                </div>
+                <div class="mode-option" id="aiMode">
+                    <h3>VS Learning AI</h3>
+                    <p>Challenge our AI that learns from players</p>
+                    <div class="setting-option" id="aiDifficulty">
+                        <label for="difficultyLevel">AI Difficulty:</label>
+                        <select id="difficultyLevel">
+                            <option value="easy">Easy</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="hard">Hard</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mode-option" id="multiplayerMode">
+                    <h3>Multiplayer</h3>
+                    <p>Play with friends online</p>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-danger" id="cancelModeBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="categoryPanel">
+            <h2>Select Categories</h2>
+            <div class="category-grid">
+                <div class="category-item">
+                    <input type="checkbox" id="cat-name" checked>
+                    <label for="cat-name">Name</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cat-place" checked>
+                    <label for="cat-place">Place</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cat-animal" checked>
+                    <label for="cat-animal">Animal</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cat-thing" checked>
+                    <label for="cat-thing">Thing</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cat-food">
+                    <label for="cat-food">Food</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cat-country">
+                    <label for="cat-country">Country</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="cartoon">
+                    <label for="cartoon">Cartoon</label>
+                </div>
+                <div class="category-item">
+                    <input type="checkbox" id="movie">
+                    <label for="movie">Movie</label>
+                </div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="saveCategoriesBtn">Save Categories</button>
+                <button class="btn btn-danger" id="cancelCategoriesBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="howToPlayPanel">
+            <h2>How to Play NPAT</h2>
+            <ol>
+                <li>Choose game mode and categories</li>
+                <li>Each round, fill categories with words starting with the shown letter</li>
+                <li>Submit before time runs out</li>
+                <li>See how you compare to AI or other players</li>
+                <li>Our AI learns from all players' answers to improve!</li>
+            </ol>
+            <div class="controls">
+                <button class="btn btn-primary" id="closeHowToBtn">Got It!</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="createRoomPanel">
+            <h2>Create New Game Room</h2>
+            <div class="setting-option">
+                <label for="roomTimeLimit">Time per round (seconds):</label>
+                <input type="number" id="roomTimeLimit" min="10" max="300" value="60">
+            </div>
+            <div class="controls">
+                <button class="btn btn-success" id="startRoomBtn">Create Room</button>
+                <button class="btn btn-danger" id="cancelCreateBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="joinRoomPanel">
+            <h2>Join Existing Game Room</h2>
+            <div class="setting-option">
+                <label for="roomCodeInput">Room Code:</label>
+                <input type="text" id="roomCodeInput" placeholder="Enter 6-digit code">
+            </div>
+            <div class="controls">
+                <button class="btn btn-accent" id="joinRoomSubmitBtn">Join Room</button>
+                <button class="btn btn-danger" id="cancelJoinBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="roomLobbyPanel">
+            <h2>Game Room</h2>
+            <div class="room-code">
+                <span id="displayRoomCode">ABC123</span>
+                <button class="btn btn-accent" id="copyRoomCodeBtn">Copy</button>
+            </div>
+            <div class="player-list">
+                <h3>Players (<span id="playerCount">1</span>/10)</h3>
+                <ul id="playerList"></ul>
+            </div>
+            <div class="controls">
+                <button class="btn btn-success" id="readyBtn">I'm Ready!</button>
+                <button class="btn btn-danger" id="leaveRoomBtn">Leave Room</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="gameAreaPanel">
+            <div class="letter-display" id="letterDisplay">A</div>
+            <div class="timer" id="timer">60</div>
+            <div class="categories" id="categoriesContainer"></div>
+            <div class="controls">
+                <button class="btn btn-primary" id="submitAnswersBtn">Submit Answers</button>
+                <button class="btn btn-danger" id="backFromGameBtn">Back to Menu</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="resultsPanel">
+            <h2>Game Results</h2>
+            <div id="resultsContainer"></div>
+            <div id="multiplayerResults" class="answer-comparison">
+                <h3>All Players' Answers</h3>
+                <div id="allPlayerAnswers"></div>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="playAgainBtn">Play Again</button>
+                <button class="btn btn-danger" id="exitToMenuBtn">Back to Menu</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="usernameModal">
+        <div class="modal-content">
+            <h2>Enter Your Username</h2>
+            <div class="setting-option">
+                <label for="usernameInput">Username (required):</label>
+                <input type="text" id="usernameInput" placeholder="Choose a username">
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="saveUsernameBtn">Continue</button>
+                <button class="btn btn-danger" id="cancelUsernameBtn">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            currentLetter: '',
+            timeLeft: 60,
+            timer: null,
+            currentRound: 0,
+            totalRounds: 5,
+            score: 0,
+            allCategories: ['Name', 'Place', 'Animal', 'Thing', 'Food', 'Country', 'Cartoon', 'Movie'],
+            categories: ['Name', 'Place', 'Animal', 'Thing'],
+            answers: [],
+            isPlaying: false,
+            gameMode: null,
+            isMultiplayer: false,
+            isHost: false,
+            roomCode: '',
+            players: {},
+            duplicatePenalty: 2,
+            playerName: '',
+            playerId: Math.random().toString(36).substring(7),
+            selectedCategories: ['Name', 'Place', 'Animal', 'Thing'],
+            aiDifficulty: 'medium',
+            aiAnswers: {},
+            aiKnowledge: {}
+        };
+
+        // DOM elements
+        const elements = {
+            // Main buttons
+            howToPlayBtn: document.getElementById('howToPlayBtn'),
+            settingsBtn: document.getElementById('settingsBtn'),
+            playModeBtn: document.getElementById('playModeBtn'),
+            categoriesBtn: document.getElementById('categoriesBtn'),
+            
+            // Panels
+            howToPlayPanel: document.getElementById('howToPlayPanel'),
+            settingsPanel: document.getElementById('settingsPanel'),
+            gameModePanel: document.getElementById('gameModePanel'),
+            categoryPanel: document.getElementById('categoryPanel'),
+            createRoomPanel: document.getElementById('createRoomPanel'),
+            joinRoomPanel: document.getElementById('joinRoomPanel'),
+            roomLobbyPanel: document.getElementById('roomLobbyPanel'),
+            gameAreaPanel: document.getElementById('gameAreaPanel'),
+            resultsPanel: document.getElementById('resultsPanel'),
+            usernameModal: document.getElementById('usernameModal'),
+            
+            // Game elements
+            letterDisplay: document.getElementById('letterDisplay'),
+            timer: document.getElementById('timer'),
+            categoriesContainer: document.getElementById('categoriesContainer'),
+            submitAnswersBtn: document.getElementById('submitAnswersBtn'),
+            backFromGameBtn: document.getElementById('backFromGameBtn'),
+            
+            // Results elements
+            resultsContainer: document.getElementById('resultsContainer'),
+            allPlayerAnswers: document.getElementById('allPlayerAnswers'),
+            playAgainBtn: document.getElementById('playAgainBtn'),
+            exitToMenuBtn: document.getElementById('exitToMenuBtn'),
+            
+            // Settings elements
+            timeLimit: document.getElementById('timeLimit'),
+            rounds: document.getElementById('rounds'),
+            duplicatePenalty: document.getElementById('duplicatePenalty'),
+            saveSettingsBtn: document.getElementById('saveSettingsBtn'),
+            backFromSettingsBtn: document.getElementById('backFromSettingsBtn'),
+            closeHowToBtn: document.getElementById('closeHowToBtn'),
+            
+            // Category selector elements
+            saveCategoriesBtn: document.getElementById('saveCategoriesBtn'),
+            cancelCategoriesBtn: document.getElementById('cancelCategoriesBtn'),
+            
+            // Game mode elements
+            singlePlayerMode: document.getElementById('singlePlayerMode'),
+            aiMode: document.getElementById('aiMode'),
+            multiplayerMode: document.getElementById('multiplayerMode'),
+            aiDifficulty: document.getElementById('aiDifficulty'),
+            difficultyLevel: document.getElementById('difficultyLevel'),
+            cancelModeBtn: document.getElementById('cancelModeBtn'),
+            
+            // Room creation elements
+            roomTimeLimit: document.getElementById('roomTimeLimit'),
+            startRoomBtn: document.getElementById('startRoomBtn'),
+            cancelCreateBtn: document.getElementById('cancelCreateBtn'),
+            
+            // Room joining elements
+            roomCodeInput: document.getElementById('roomCodeInput'),
+            joinRoomSubmitBtn: document.getElementById('joinRoomSubmitBtn'),
+            cancelJoinBtn: document.getElementById('cancelJoinBtn'),
+            
+            // Lobby elements
+            displayRoomCode: document.getElementById('displayRoomCode'),
+            copyRoomCodeBtn: document.getElementById('copyRoomCodeBtn'),
+            playerCount: document.getElementById('playerCount'),
+            playerList: document.getElementById('playerList'),
+            readyBtn: document.getElementById('readyBtn'),
+            leaveRoomBtn: document.getElementById('leaveRoomBtn'),
+            
+            // Username modal elements
+            usernameInput: document.getElementById('usernameInput'),
+            saveUsernameBtn: document.getElementById('saveUsernameBtn'),
+            cancelUsernameBtn: document.getElementById('cancelUsernameBtn'),
+            
+            // Multiplayer results
+            multiplayerResults: document.getElementById('multiplayerResults')
+        };
+
+        // Initialize the game
+        function initialize() {
+            initAI();
+            setupEventListeners();
+            showUsernameModal();
+        }
+
+        // Set up all event listeners
+        function setupEventListeners() {
+            // Main menu buttons
+            elements.howToPlayBtn.addEventListener('click', () => showPanel('howToPlayPanel'));
+            elements.settingsBtn.addEventListener('click', () => showPanel('settingsPanel'));
+            elements.playModeBtn.addEventListener('click', showGameModeSelector);
+            elements.categoriesBtn.addEventListener('click', showCategorySelector);
+            
+            // Game controls
+            elements.submitAnswersBtn.addEventListener('click', submitAnswers);
+            elements.playAgainBtn.addEventListener('click', resetGame);
+            elements.exitToMenuBtn.addEventListener('click', returnToMenu);
+            elements.backFromGameBtn.addEventListener('click', confirmExitGame);
+            
+            // Settings
+            elements.saveSettingsBtn.addEventListener('click', saveSettings);
+            elements.backFromSettingsBtn.addEventListener('click', () => hideAllPanels());
+            
+            // How to play
+            elements.closeHowToBtn.addEventListener('click', () => hideAllPanels());
+            
+            // Category selection
+            elements.saveCategoriesBtn.addEventListener('click', saveCategories);
+            elements.cancelCategoriesBtn.addEventListener('click', () => hideAllPanels());
+            
+            // Game mode selection
+            elements.singlePlayerMode.addEventListener('click', () => selectGameMode('single'));
+            elements.aiMode.addEventListener('click', () => selectGameMode('ai'));
+            elements.multiplayerMode.addEventListener('click', () => selectGameMode('multiplayer'));
+            elements.cancelModeBtn.addEventListener('click', () => hideAllPanels());
+            elements.difficultyLevel.addEventListener('change', updateAiDifficulty);
+            
+            // Multiplayer
+            elements.startRoomBtn.addEventListener('click', createRoom);
+            elements.cancelCreateBtn.addEventListener('click', () => showPanel('gameModePanel'));
+            elements.joinRoomSubmitBtn.addEventListener('click', joinRoom);
+            elements.cancelJoinBtn.addEventListener('click', () => showPanel('gameModePanel'));
+            elements.copyRoomCodeBtn.addEventListener('click', copyRoomCode);
+            elements.readyBtn.addEventListener('click', toggleReady);
+            elements.leaveRoomBtn.addEventListener('click', leaveRoom);
+            
+            // Username modal
+            elements.saveUsernameBtn.addEventListener('click', saveUsername);
+            elements.cancelUsernameBtn.addEventListener('click', () => elements.usernameModal.style.display = 'none');
+        }
+
+        // Show a specific panel
+        function showPanel(panelId) {
+            hideAllPanels();
+            document.getElementById(panelId).classList.add('active-panel');
+        }
+
+        // Hide all panels
+        function hideAllPanels() {
+            const panels = document.querySelectorAll('.panel');
+            panels.forEach(panel => {
+                panel.classList.remove('active-panel');
+            });
+        }
+
+        // Initialize AI knowledge base
+        function initAI() {
+            gameState.aiKnowledge = {
+                easy: JSON.parse(localStorage.getItem('aiKnowledgeEasy')) || {
+                    'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
+                    'Place': ['Austin', 'Boston', 'Chicago', 'Denver', 'Egypt'],
+                    'Animal': ['Ant', 'Bear', 'Cat', 'Dog', 'Elephant'],
+                    'Thing': ['Apple', 'Ball', 'Chair', 'Door', 'Egg'],
+                    'Food': ['Apple', 'Banana', 'Carrot', 'Donut', 'Eggplant'],
+                    'Country': ['Argentina', 'Brazil', 'Canada', 'Denmark', 'Ecuador'],
+                    'Cartoon': ['Arthur', 'Bugs', 'Courage', 'Dexter', 'Ed'],
+                    'Movie': ['Avatar', 'Batman', 'Casino', 'Dune', 'E.T.']
+                },
+                medium: JSON.parse(localStorage.getItem('aiKnowledgeMedium')) || {
+                    'Name': ['Amelia', 'Benjamin', 'Charlotte', 'Daniel', 'Elizabeth'],
+                    'Place': ['Amsterdam', 'Barcelona', 'Canberra', 'Dublin', 'Edinburgh'],
+                    'Animal': ['Alligator', 'Butterfly', 'Cheetah', 'Dolphin', 'Eagle'],
+                    'Thing': ['Airplane', 'Bicycle', 'Computer', 'Diamond', 'Eraser'],
+                    'Food': ['Avocado', 'Burrito', 'Cupcake', 'Dumpling', 'Escargot'],
+                    'Country': ['Australia', 'Belgium', 'Colombia', 'Dominica', 'Estonia'],
+                    'Cartoon': ['Animaniacs', 'Bojack', 'Chipmunks', 'Daria', 'Elmo'],
+                    'Movie': ['Amadeus', 'Braveheart', 'Chinatown', 'Dracula', 'Elf']
+                },
+                hard: JSON.parse(localStorage.getItem('aiKnowledgeHard')) || {
+                    'Name': ['Anastasia', 'Bartholomew', 'Cornelius', 'Demetrius', 'Evangeline'],
+                    'Place': ['Antarctica', 'Bora Bora', 'Casablanca', 'Dominica', 'Ecuador'],
+                    'Animal': ['Aardvark', 'Binturong', 'Chinchilla', 'Dugong', 'Emu'],
+                    'Thing': ['Accordion', 'Binoculars', 'Chandelier', 'Didgeridoo', 'Espresso Machine'],
+                    'Food': ['Arugula', 'Bruschetta', 'Ceviche', 'Dulce de Leche', 'Endive'],
+                    'Country': ['Azerbaijan', 'Botswana', 'Comoros', 'Djibouti', 'Eswatini'],
+                    'Cartoon': ['Aqua Teen', 'Biker Mice', 'Cow & Chicken', 'Duckman', 'Exosquad'],
+                    'Movie': ['Amélie', 'Barry Lyndon', 'Crouching Tiger', 'Dogville', 'Eyes Wide Shut']
+                }
+            };
+        }
+
+        // Save learned answers to localStorage
+        function saveAILearning() {
+            localStorage.setItem('aiKnowledgeEasy', JSON.stringify(gameState.aiKnowledge.easy));
+            localStorage.setItem('aiKnowledgeMedium', JSON.stringify(gameState.aiKnowledge.medium));
+            localStorage.setItem('aiKnowledgeHard', JSON.stringify(gameState.aiKnowledge.hard));
+        }
+
+        // AI learns from player answers
+        function learnFromAnswers(answers) {
+            Object.keys(answers).forEach(category => {
+                const answer = answers[category];
+                if (answer && answer.length > 0) {
+                    const firstLetter = answer.charAt(0).toUpperCase();
+                    
+                    // Add to all difficulty levels
+                    ['easy', 'medium', 'hard'].forEach(difficulty => {
+                        if (!gameState.aiKnowledge[difficulty][category]) {
+                            gameState.aiKnowledge[difficulty][category] = [];
+                        }
+                        
+                        // Only add if not already present
+                        if (!gameState.aiKnowledge[difficulty][category].some(a => 
+                            a.toLowerCase() === answer.toLowerCase())) {
+                            gameState.aiKnowledge[difficulty][category].push(answer);
+                        }
+                    });
+                }
+            });
+            saveAILearning();
+        }
+
+        // Generate AI answers based on learned knowledge
+        function generateAiAnswers() {
+            gameState.aiAnswers = {};
+            const knowledge = gameState.aiKnowledge[gameState.aiDifficulty];
+            
+            gameState.categories.forEach(category => {
+                const possibleAnswers = knowledge[category] || [];
+                const answersForLetter = possibleAnswers.filter(answer => 
+                    answer.charAt(0).toUpperCase() === gameState.currentLetter
+                );
+                
+                if (answersForLetter.length > 0) {
+                    // For harder difficulties, sometimes skip answers
+                    const skipChance = gameState.aiDifficulty === 'easy' ? 0.3 : 
+                                      gameState.aiDifficulty === 'medium' ? 0.15 : 0;
+                    
+                    if (Math.random() > skipChance) {
+                        gameState.aiAnswers[category] = answersForLetter[
+                            Math.floor(Math.random() * answersForLetter.length)
+                        ];
+                    }
+                }
+            });
+        }
+
+        // Show game mode selector
+        function showGameModeSelector() {
+            if (!gameState.playerName) {
+                showUsernameModal();
+                return;
+            }
+            showPanel('gameModePanel');
+        }
+
+        // Show category selector
+        function showCategorySelector() {
+            if (!gameState.playerName) {
+                showUsernameModal();
+                return;
+            }
+            showPanel('categoryPanel');
+        }
+
+        // Select game mode
+        function selectGameMode(mode) {
+            gameState.gameMode = mode;
+            
+            if (mode === 'ai') {
+                elements.aiDifficulty.style.display = 'block';
+            } else {
+                elements.aiDifficulty.style.display = 'none';
+            }
+            
+            if (mode === 'multiplayer') {
+                showPanel('createRoomPanel');
+            } else {
+                startGame();
+            }
+        }
+
+        // Update AI difficulty
+        function updateAiDifficulty() {
+            gameState.aiDifficulty = elements.difficultyLevel.value;
+        }
+
+        // Save settings
+        function saveSettings() {
+            gameState.timeLeft = parseInt(elements.timeLimit.value);
+            gameState.totalRounds = parseInt(elements.rounds.value);
+            gameState.duplicatePenalty = parseInt(elements.duplicatePenalty.value);
+            hideAllPanels();
+            alert('Settings saved successfully!');
+        }
+
+        // Save categories
+        function saveCategories() {
+            const selectedCategories = [];
+            gameState.allCategories.forEach(category => {
+                const checkbox = document.getElementById(`cat-${category.toLowerCase()}`);
+                if (checkbox && checkbox.checked) {
+                    selectedCategories.push(category);
+                }
+            });
+            
+            if (selectedCategories.length === 0) {
+                alert('Please select at least one category');
+                return;
+            }
+            
+            gameState.selectedCategories = selectedCategories;
+            gameState.categories = selectedCategories;
+            hideAllPanels();
+            alert('Categories saved successfully!');
+        }
+
+        // Show username modal
+        function showUsernameModal() {
+            elements.usernameModal.style.display = 'flex';
+        }
+
+        // Save username
+        function saveUsername() {
+            const username = elements.usernameInput.value.trim();
+            if (!username) {
+                alert('Please enter a username');
+                return;
+            }
+            
+            gameState.playerName = username;
+            elements.usernameModal.style.display = 'none';
+        }
+
+        // Start the game
+        function startGame() {
+            if (!gameState.playerName) {
+                showUsernameModal();
+                return;
+            }
+            
+            // Reset game state
+            gameState.isPlaying = true;
+            gameState.currentRound = 0;
+            gameState.score = 0;
+            gameState.answers = [];
+            gameState.aiAnswers = {};
+            
+            // Set up multiplayer if needed
+            if (gameState.isMultiplayer) {
+                initializeMultiplayer();
+            }
+            
+            // Show game area
+            hideAllPanels();
+            showPanel('gameAreaPanel');
+            
+            startRound();
+        }
+
+        // Start a new round
+        function startRound() {
+            gameState.currentRound++;
+            
+            if (gameState.currentRound > gameState.totalRounds) {
+                endGame();
+                return;
+            }
+            
+            // Generate random letter
+            gameState.currentLetter = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+            elements.letterDisplay.textContent = gameState.currentLetter;
+            
+            // Reset timer
+            gameState.timeLeft = gameState.isMultiplayer ? 
+                parseInt(elements.roomTimeLimit.value) : 
+                parseInt(elements.timeLimit.value);
+            elements.timer.textContent = gameState.timeLeft;
+            
+            // Clear previous timer
+            if (gameState.timer) {
+                clearInterval(gameState.timer);
+            }
+            
+            // Start countdown
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                elements.timer.textContent = gameState.timeLeft;
+                
+                if (gameState.timeLeft <= 0) {
+                    clearInterval(gameState.timer);
+                    submitAnswers();
+                }
+            }, 1000);
+            
+            // Create category inputs
+            elements.categoriesContainer.innerHTML = '';
+            gameState.categories.forEach(category => {
+                const categoryDiv = document.createElement('div');
+                categoryDiv.className = 'category';
+                categoryDiv.innerHTML = `
+                    <h3>${category}</h3>
+                    <input type="text" id="${category.toLowerCase()}" placeholder="Starts with ${gameState.currentLetter}">
+                `;
+                elements.categoriesContainer.appendChild(categoryDiv);
+            });
+            
+            // Generate AI answers if in AI mode
+            if (gameState.gameMode === 'ai') {
+                generateAiAnswers();
+            }
+            
+            // Sync with multiplayer
+            if (gameState.isMultiplayer) {
+                // In a real implementation, this would update the database
+                console.log(`Multiplayer round started with letter ${gameState.currentLetter}`);
+            }
+        }
+
+        // Submit answers
+        function submitAnswers() {
+            clearInterval(gameState.timer);
+            
+            const roundAnswers = {
+                letter: gameState.currentLetter,
+                answers: {},
+                score: 0
+            };
+
+            let roundScore = 0;
+            
+            // Collect answers
+            gameState.categories.forEach(category => {
+                const input = document.getElementById(category.toLowerCase());
+                const answer = input.value.trim();
+                roundAnswers.answers[category] = answer;
+
+                // Calculate score
+                if (answer && answer.charAt(0).toUpperCase() === gameState.currentLetter) {
+                    roundScore += 1;
+                    
+                    // Check for duplicates with AI
+                    if (gameState.gameMode === 'ai' && gameState.aiAnswers[category] && 
+                        answer.toLowerCase() === gameState.aiAnswers[category].toLowerCase()) {
+                        roundScore -= gameState.duplicatePenalty;
+                        roundAnswers.answers[category] += ` (duplicate -${gameState.duplicatePenalty})`;
+                    }
+                }
+            });
+
+            roundAnswers.score = Math.max(0, roundScore);
+            gameState.score += roundAnswers.score;
+            gameState.answers.push(roundAnswers);
+            
+            // AI learns from these answers
+            if (gameState.gameMode === 'ai') {
+                learnFromAnswers(roundAnswers.answers);
+            }
+            
+            // Multiplayer handling
+            if (gameState.isMultiplayer) {
+                // In a real implementation, this would update the database
+                console.log('Multiplayer answers submitted');
+                showRoundResults();
+            } else {
+                startRound();
+            }
+        }
+
+        // Show round results (multiplayer)
+        function showRoundResults() {
+            clearInterval(gameState.timer);
+            hideAllPanels();
+            
+            const tempResults = document.createElement('div');
+            tempResults.className = 'player-result';
+            tempResults.innerHTML = `
+                <h3>Round ${gameState.currentRound} Results</h3>
+                <div id="roundAnswersDisplay"></div>
+                <button id="continueToNextRound" class="btn btn-primary">Continue</button>
+            `;
+            
+            elements.gameAreaPanel.innerHTML = '';
+            elements.gameAreaPanel.appendChild(tempResults);
+            showPanel('gameAreaPanel');
+            
+            // Show all players' answers
+            const roundAnswersDisplay = document.getElementById('roundAnswersDisplay');
+            roundAnswersDisplay.innerHTML = '';
+            
+            // In a real implementation, this would show other players' answers
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'player-answer';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'player-name';
+            nameSpan.textContent = gameState.playerName + ':';
+            
+            const answersDiv = document.createElement('div');
+            answersDiv.className = 'answer-list';
+            
+            const lastRound = gameState.answers[gameState.answers.length - 1];
+            Object.keys(lastRound.answers).forEach(category => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-item';
+                answerDiv.textContent = `${category}: ${lastRound.answers[category]}`;
+                answersDiv.appendChild(answerDiv);
+            });
+            
+            playerDiv.appendChild(nameSpan);
+            playerDiv.appendChild(answersDiv);
+            roundAnswersDisplay.appendChild(playerDiv);
+            
+            // Continue button
+            document.getElementById('continueToNextRound').addEventListener('click', () => {
+                startRound();
+            });
+        }
+
+        // End the game
+        function endGame() {
+            clearInterval(gameState.timer);
+            hideAllPanels();
+            showPanel('resultsPanel');
+            
+            // Calculate AI score
+            let aiScore = 0;
+            if (gameState.gameMode === 'ai') {
+                aiScore = calculateAiScore();
+            }
+            
+            // Display results
+            elements.resultsContainer.innerHTML = `
+                <div class="player-result">
+                    <h3>Game Complete!</h3>
+                    <p>You played ${gameState.totalRounds} rounds and scored <span class="score">${gameState.score} points</span>.</p>
+                    ${gameState.gameMode === 'ai' ? 
+                        `<p>AI scored <span class="score">${aiScore} points</span></p>
+                         <p>${gameState.score > aiScore ? 'You won!' : gameState.score === aiScore ? 'It\'s a tie!' : 'AI won!'}</p>` : 
+                        ''}
+                </div>
+            `;
+            
+            // Show round-by-round results
+            gameState.answers.forEach((round, index) => {
+                const roundDiv = document.createElement('div');
+                roundDiv.className = 'player-result';
+                roundDiv.innerHTML = createRoundResultHTML(round, index);
+                elements.resultsContainer.appendChild(roundDiv);
+            });
+            
+            // Show multiplayer answers if applicable
+            if (gameState.isMultiplayer) {
+                showAllPlayerAnswers();
+                elements.multiplayerResults.style.display = 'block';
+            } else {
+                elements.multiplayerResults.style.display = 'none';
+            }
+        }
+
+        // Calculate AI score
+        function calculateAiScore() {
+            let aiScore = 0;
+            gameState.answers.forEach(round => {
+                Object.keys(round.answers).forEach(category => {
+                    const playerAnswer = round.answers[category];
+                    const aiAnswer = gameState.aiAnswers[category];
+                    
+                    if (aiAnswer && aiAnswer.charAt(0).toUpperCase() === round.letter) {
+                        aiScore += 1;
+                        
+                        if (playerAnswer && playerAnswer.toLowerCase() === aiAnswer.toLowerCase()) {
+                            aiScore -= gameState.duplicatePenalty;
+                        }
+                    }
+                });
+            });
+            return Math.max(0, aiScore);
+        }
+
+        // Create HTML for round results
+        function createRoundResultHTML(round, index) {
+            let html = `
+                <h4>Round ${index + 1} - Letter: ${round.letter} (Score: ${round.score})</h4>
+                <table>
+                    <tr>
+                        <th>Category</th>
+                        <th>Your Answer</th>
+                        ${gameState.gameMode === 'ai' ? '<th>AI Answer</th><th>Points</th>' : ''}
+                    </tr>
+            `;
+            
+            gameState.categories.forEach(category => {
+                const playerAnswer = round.answers[category] || '-';
+                const aiAnswer = (gameState.gameMode === 'ai' && gameState.aiAnswers[category]) || '-';
+                
+                let points = 0;
+                if (playerAnswer !== '-' && playerAnswer.charAt(0).toUpperCase() === round.letter) {
+                    points = 1;
+                    
+                    if (gameState.gameMode === 'ai' && 
+                        aiAnswer !== '-' && 
+                        playerAnswer.toLowerCase() === aiAnswer.toLowerCase()) {
+                        points -= gameState.duplicatePenalty;
+                    }
+                }
+                
+                html += `
+                    <tr>
+                        <td>${category}</td>
+                        <td>${playerAnswer}</td>
+                        ${gameState.gameMode === 'ai' ? 
+                            `<td>${aiAnswer}</td>
+                             <td>${points > 0 ? '+' + points : points}</td>` : 
+                            ''}
+                    </tr>
+                `;
+            });
+            
+            html += `</table>`;
+            return html;
+        }
+
+        // Show all player answers
+        function showAllPlayerAnswers() {
+            const container = elements.allPlayerAnswers;
+            container.innerHTML = '';
+            
+            if (!gameState.isMultiplayer) return;
+            
+            // In a real implementation, this would show other players' answers
+            const playerDiv = document.createElement('div');
+            playerDiv.className = 'player-answer';
+            
+            const nameSpan = document.createElement('span');
+            nameSpan.className = 'player-name';
+            nameSpan.textContent = gameState.playerName + ':';
+            
+            const scoreSpan = document.createElement('span');
+            scoreSpan.className = 'score';
+            scoreSpan.textContent = `Total: ${gameState.score || 0} points`;
+            
+            const answersDiv = document.createElement('div');
+            answersDiv.className = 'answer-list';
+            
+            // Show answers from last round
+            const lastRound = gameState.answers[gameState.answers.length - 1];
+            Object.keys(lastRound.answers).forEach(category => {
+                const answerDiv = document.createElement('div');
+                answerDiv.className = 'answer-item';
+                answerDiv.textContent = `${category}: ${lastRound.answers[category]}`;
+                answersDiv.appendChild(answerDiv);
+            });
+            
+            playerDiv.appendChild(nameSpan);
+            playerDiv.appendChild(scoreSpan);
+            playerDiv.appendChild(answersDiv);
+            container.appendChild(playerDiv);
+        }
+
+        // Reset the game
+        function resetGame() {
+            if (gameState.isMultiplayer) {
+                // In a real app, this would notify other players
+                startGame();
+            } else {
+                hideAllPanels();
+                startGame();
+            }
+        }
+
+        // Return to main menu
+        function returnToMenu() {
+            hideAllPanels();
+            if (gameState.isMultiplayer) {
+                showPanel('roomLobbyPanel');
+            }
+        }
+
+        // Confirm exit game
+        function confirmExitGame() {
+            if (confirm('Are you sure you want to exit the current game? Your progress will be lost.')) {
+                if (gameState.isMultiplayer) {
+                    leaveRoom();
+                } else {
+                    returnToMenu();
+                }
+            }
+        }
+
+        // Create a room
+        function createRoom() {
+            gameState.roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+            gameState.isMultiplayer = true;
+            gameState.isHost = true;
+            
+            // In a real implementation, this would create a room in the database
+            console.log(`Room created with code: ${gameState.roomCode}`);
+            
+            elements.displayRoomCode.textContent = gameState.roomCode;
+            showPanel('roomLobbyPanel');
+        }
+
+        // Join a room
+        function joinRoom() {
+            const roomCode = elements.roomCodeInput.value.trim().toUpperCase();
+            
+            if (!roomCode || roomCode.length !== 6) {
+                alert('Please enter a valid 6-digit room code');
+                return;
+            }
+            
+            gameState.isMultiplayer = true;
+            gameState.isHost = false;
+            gameState.roomCode = roomCode;
+            
+            // In a real implementation, this would check if the room exists
+            console.log(`Joining room: ${roomCode}`);
+            
+            elements.displayRoomCode.textContent = roomCode;
+            showPanel('roomLobbyPanel');
+        }
+
+        // Copy room code to clipboard
+        function copyRoomCode() {
+            navigator.clipboard.writeText(gameState.roomCode);
+            alert('Room code copied to clipboard!');
+        }
+
+        // Toggle ready status
+        function toggleReady() {
+            // In a real implementation, this would update the database
+            console.log('Ready status toggled');
+            
+            // For demo purposes, just start the game if host
+            if (gameState.isHost) {
+                startGame();
+            }
+        }
+
+        // Update player list
+        function updatePlayerList() {
+            elements.playerList.innerHTML = '';
+            
+            // In a real implementation, this would show other players
+            const li = document.createElement('li');
+            const statusClass = 'ready';
+            
+            li.innerHTML = `
+                <span class="player-status ${statusClass}"></span>
+                ${gameState.playerName} ${gameState.isHost ? '(Host)' : ''}
+            `;
+            
+            elements.playerList.appendChild(li);
+            elements.playerCount.textContent = 1;
+            
+            // Update ready button text
+            elements.readyBtn.textContent = 'I\'m Ready!';
+            elements.readyBtn.classList.add('btn-success');
+            elements.readyBtn.classList.remove('btn-warning');
+        }
+
+        // Leave the room
+        function leaveRoom() {
+            gameState.isMultiplayer = false;
+            gameState.isHost = false;
+            gameState.roomCode = '';
+            gameState.players = {};
+            
+            hideAllPanels();
+        }
+
+        // Initialize multiplayer
+        function initializeMultiplayer() {
+            // In a real implementation, this would initialize Firebase
+            console.log('Initializing multiplayer');
+            updatePlayerList();
+        }
+
+        // Start the game
+        initialize();
+    </script>
+</body>
+</html>
