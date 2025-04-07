@@ -7,6 +7,7 @@
     <!-- Add Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
     <style>
         /* Base Styles */
         :root {
@@ -219,6 +220,11 @@
         
         .btn-warning {
             background-color: var(--warning);
+            color: white;
+        }
+        
+        .btn-google {
+            background-color: #4285F4;
             color: white;
         }
         
@@ -453,6 +459,38 @@
             border: 1px solid #ddd;
             border-radius: 4px;
             margin-right: 10px;
+        }
+        
+        /* Auth Options */
+        .auth-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .auth-divider {
+            text-align: center;
+            margin: 10px 0;
+            position: relative;
+        }
+        
+        .auth-divider::before,
+        .auth-divider::after {
+            content: "";
+            flex: 1;
+            border-bottom: 1px solid #ddd;
+            position: absolute;
+            top: 50%;
+            width: 40%;
+        }
+        
+        .auth-divider::before {
+            left: 0;
+        }
+        
+        .auth-divider::after {
+            right: 0;
         }
         
         /* Responsive */
@@ -703,6 +741,14 @@
                 <label for="usernameInput">Username (required):</label>
                 <input type="text" id="usernameInput" placeholder="Choose a username">
             </div>
+            
+            <div class="auth-options">
+                <div class="auth-divider">or</div>
+                <button class="btn btn-google" id="googleSignInBtn">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
+            </div>
+            
             <div class="controls">
                 <button class="btn btn-primary" id="saveUsernameBtn">Continue</button>
                 <button class="btn btn-danger" id="cancelUsernameBtn">Cancel</button>
@@ -728,6 +774,10 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
+        const auth = firebase.auth();
+
+        // Initialize Google Auth Provider
+        const provider = new firebase.auth.GoogleAuthProvider();
 
         // Game state
         const gameState = {
@@ -757,7 +807,8 @@
             roomRef: null,
             playersRef: null,
             gameRef: null,
-            chatRef: null
+            chatRef: null,
+            isGoogleSignedIn: false
         };
 
         // DOM elements
@@ -843,6 +894,7 @@
             usernameInput: document.getElementById('usernameInput'),
             saveUsernameBtn: document.getElementById('saveUsernameBtn'),
             cancelUsernameBtn: document.getElementById('cancelUsernameBtn'),
+            googleSignInBtn: document.getElementById('googleSignInBtn'),
             
             // Multiplayer results
             multiplayerResults: document.getElementById('multiplayerResults')
@@ -853,6 +905,18 @@
             initAI();
             setupEventListeners();
             showUsernameModal();
+            
+            // Check if user is already signed in
+            auth.onAuthStateChanged(user => {
+                if (user) {
+                    // User is signed in via Google
+                    gameState.playerName = user.displayName || user.email.split('@')[0];
+                    gameState.playerId = user.uid;
+                    gameState.isGoogleSignedIn = true;
+                    elements.usernameInput.value = gameState.playerName;
+                    elements.usernameInput.disabled = true;
+                }
+            });
         }
 
         // Set up all event listeners
@@ -909,6 +973,32 @@
             // Username modal
             elements.saveUsernameBtn.addEventListener('click', saveUsername);
             elements.cancelUsernameBtn.addEventListener('click', () => elements.usernameModal.style.display = 'none');
+            elements.googleSignInBtn.addEventListener('click', signInWithGoogle);
+        }
+
+        // Sign in with Google
+        function signInWithGoogle() {
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // User signed in
+                    const user = result.user;
+                    gameState.playerName = user.displayName || user.email.split('@')[0];
+                    gameState.playerId = user.uid;
+                    gameState.isGoogleSignedIn = true;
+                    
+                    // Update UI
+                    elements.usernameInput.value = gameState.playerName;
+                    elements.usernameInput.disabled = true;
+                    
+                    // Hide modal if username is valid
+                    if (gameState.playerName) {
+                        elements.usernameModal.style.display = 'none';
+                    }
+                })
+                .catch((error) => {
+                    console.error('Google sign-in error:', error);
+                    alert('Failed to sign in with Google. Please try again.');
+                });
         }
 
         // Show a specific panel
@@ -1591,7 +1681,8 @@
                 score: 0,
                 isReady: false,
                 hasSubmitted: false,
-                answers: null
+                answers: null,
+                isGoogleSignedIn: gameState.isGoogleSignedIn
             });
         }
 
@@ -1689,6 +1780,7 @@
                 li.innerHTML = `
                     <span class="player-status ${statusClass}"></span>
                     ${player.name} ${playerId === gameState.roomRef.child('hostId').key ? '(Host)' : ''}
+                    ${player.isGoogleSignedIn ? '<i class="fab fa-google" style="margin-left: 5px;"></i>' : ''}
                 `;
                 
                 elements.playerList.appendChild(li);
@@ -1824,7 +1916,8 @@
                 score: 0,
                 isReady: false,
                 hasSubmitted: false,
-                answers: null
+                answers: null,
+                isGoogleSignedIn: gameState.isGoogleSignedIn
             }});
         }
 
