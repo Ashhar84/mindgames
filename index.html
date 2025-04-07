@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>NPAT - Multiplayer with Learning AI</title>
+    <!-- Add Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
     <style>
         /* Base Styles */
         :root {
@@ -150,6 +153,21 @@
             font-size: 0.9rem;
         }
         
+        .correct {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        
+        .duplicate {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        
         /* Buttons */
         .btn {
             padding: 12px 24px;
@@ -196,6 +214,11 @@
         
         .btn-pink {
             background-color: var(--pink);
+            color: white;
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
             color: white;
         }
         
@@ -312,6 +335,32 @@
             margin: 10px 0;
         }
         
+        .share-buttons {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+            flex-wrap: wrap;
+        }
+        
+        .share-btn {
+            padding: 8px 15px;
+            border-radius: 5px;
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .whatsapp {
+            background-color: #25D366;
+        }
+        
+        .sms {
+            background-color: #34B7F1;
+        }
+        
         /* Category Grid */
         .category-grid {
             display: grid;
@@ -350,6 +399,60 @@
         .mode-option h3 {
             color: var(--primary);
             margin-bottom: 10px;
+        }
+        
+        /* Chat Room */
+        .chat-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .chat-header {
+            background-color: var(--primary);
+            color: white;
+            padding: 10px;
+            font-weight: bold;
+        }
+        
+        .chat-messages {
+            height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            background-color: white;
+        }
+        
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 5px;
+            background-color: #f0f0f0;
+        }
+        
+        .message-sender {
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        
+        .message-time {
+            font-size: 0.8rem;
+            color: #666;
+            margin-left: 5px;
+        }
+        
+        .chat-input {
+            display: flex;
+            padding: 10px;
+            background-color: #f8f9fa;
+        }
+        
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-right: 10px;
         }
         
         /* Responsive */
@@ -511,6 +614,10 @@
                 <label for="roomTimeLimit">Time per round (seconds):</label>
                 <input type="number" id="roomTimeLimit" min="10" max="300" value="60">
             </div>
+            <div class="setting-option">
+                <label for="roomRounds">Number of rounds:</label>
+                <input type="number" id="roomRounds" min="1" max="20" value="5">
+            </div>
             <div class="controls">
                 <button class="btn btn-success" id="startRoomBtn">Create Room</button>
                 <button class="btn btn-danger" id="cancelCreateBtn">Back</button>
@@ -535,10 +642,30 @@
                 <span id="displayRoomCode">ABC123</span>
                 <button class="btn btn-accent" id="copyRoomCodeBtn">Copy</button>
             </div>
+            
+            <div class="share-buttons">
+                <button class="share-btn whatsapp" id="shareWhatsAppBtn">
+                    <i class="fab fa-whatsapp"></i> Share via WhatsApp
+                </button>
+                <button class="share-btn sms" id="shareSMSBtn">
+                    <i class="fas fa-sms"></i> Share via SMS
+                </button>
+            </div>
+            
             <div class="player-list">
                 <h3>Players (<span id="playerCount">1</span>/10)</h3>
                 <ul id="playerList"></ul>
             </div>
+            
+            <div class="chat-container">
+                <div class="chat-header">Chat Room</div>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input">
+                    <input type="text" id="chatInput" placeholder="Type your message...">
+                    <button class="btn btn-primary" id="sendMessageBtn">Send</button>
+                </div>
+            </div>
+            
             <div class="controls">
                 <button class="btn btn-success" id="readyBtn">I'm Ready!</button>
                 <button class="btn btn-danger" id="leaveRoomBtn">Leave Room</button>
@@ -583,7 +710,25 @@
         </div>
     </div>
 
+    <!-- Add Font Awesome for icons -->
+    <script src="https://kit.fontawesome.com/a076d05399.js" crossorigin="anonymous"></script>
+
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyDZQH0uG0jLJQ5X7Q5ZQ5ZQ5ZQ5ZQ5ZQ5ZQ",
+            authDomain: "npat-game.firebaseapp.com",
+            databaseURL: "https://npat-game-default-rtdb.firebaseio.com",
+            projectId: "npat-game",
+            storageBucket: "npat-game.appspot.com",
+            messagingSenderId: "1234567890",
+            appId: "1:1234567890:web:abcdef1234567890"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // Game state
         const gameState = {
             currentLetter: '',
@@ -607,7 +752,12 @@
             selectedCategories: ['Name', 'Place', 'Animal', 'Thing'],
             aiDifficulty: 'medium',
             aiAnswers: {},
-            aiKnowledge: {}
+            aiKnowledge: {},
+            isReady: false,
+            roomRef: null,
+            playersRef: null,
+            gameRef: null,
+            chatRef: null
         };
 
         // DOM elements
@@ -665,6 +815,7 @@
             
             // Room creation elements
             roomTimeLimit: document.getElementById('roomTimeLimit'),
+            roomRounds: document.getElementById('roomRounds'),
             startRoomBtn: document.getElementById('startRoomBtn'),
             cancelCreateBtn: document.getElementById('cancelCreateBtn'),
             
@@ -676,10 +827,17 @@
             // Lobby elements
             displayRoomCode: document.getElementById('displayRoomCode'),
             copyRoomCodeBtn: document.getElementById('copyRoomCodeBtn'),
+            shareWhatsAppBtn: document.getElementById('shareWhatsAppBtn'),
+            shareSMSBtn: document.getElementById('shareSMSBtn'),
             playerCount: document.getElementById('playerCount'),
             playerList: document.getElementById('playerList'),
             readyBtn: document.getElementById('readyBtn'),
             leaveRoomBtn: document.getElementById('leaveRoomBtn'),
+            
+            // Chat elements
+            chatMessages: document.getElementById('chatMessages'),
+            chatInput: document.getElementById('chatInput'),
+            sendMessageBtn: document.getElementById('sendMessageBtn'),
             
             // Username modal elements
             usernameInput: document.getElementById('usernameInput'),
@@ -735,8 +893,18 @@
             elements.joinRoomSubmitBtn.addEventListener('click', joinRoom);
             elements.cancelJoinBtn.addEventListener('click', () => showPanel('gameModePanel'));
             elements.copyRoomCodeBtn.addEventListener('click', copyRoomCode);
+            elements.shareWhatsAppBtn.addEventListener('click', shareViaWhatsApp);
+            elements.shareSMSBtn.addEventListener('click', shareViaSMS);
             elements.readyBtn.addEventListener('click', toggleReady);
             elements.leaveRoomBtn.addEventListener('click', leaveRoom);
+            
+            // Chat
+            elements.sendMessageBtn.addEventListener('click', sendChatMessage);
+            elements.chatInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendChatMessage();
+                }
+            });
             
             // Username modal
             elements.saveUsernameBtn.addEventListener('click', saveUsername);
@@ -953,13 +1121,12 @@
             // Set up multiplayer if needed
             if (gameState.isMultiplayer) {
                 initializeMultiplayer();
+            } else {
+                // Show game area for single player
+                hideAllPanels();
+                showPanel('gameAreaPanel');
+                startRound();
             }
-            
-            // Show game area
-            hideAllPanels();
-            showPanel('gameAreaPanel');
-            
-            startRound();
         }
 
         // Start a new round
@@ -1015,9 +1182,14 @@
             }
             
             // Sync with multiplayer
-            if (gameState.isMultiplayer) {
-                // In a real implementation, this would update the database
-                console.log(`Multiplayer round started with letter ${gameState.currentLetter}`);
+            if (gameState.isMultiplayer && gameState.isHost) {
+                // Update game state in Firebase
+                gameState.gameRef.update({
+                    currentRound: gameState.currentRound,
+                    currentLetter: gameState.currentLetter,
+                    timeLeft: gameState.timeLeft,
+                    gameStarted: true
+                });
             }
         }
 
@@ -1039,13 +1211,13 @@
                 const answer = input.value.trim();
                 roundAnswers.answers[category] = answer;
 
-                // Calculate score
-                if (answer && answer.charAt(0).toUpperCase() === gameState.currentLetter) {
-                    roundScore += 1;
+                // Validate answer
+                if (answer) {
+                    const isValid = validateAnswer(answer, category);
                     
-                    // Check for duplicates with AI
-                    if (gameState.gameMode === 'ai' && gameState.aiAnswers[category] && 
-                        answer.toLowerCase() === gameState.aiAnswers[category].toLowerCase()) {
+                    if (isValid === 'correct') {
+                        roundScore += 1;
+                    } else if (isValid === 'duplicate') {
                         roundScore -= gameState.duplicatePenalty;
                         roundAnswers.answers[category] += ` (duplicate -${gameState.duplicatePenalty})`;
                     }
@@ -1063,12 +1235,34 @@
             
             // Multiplayer handling
             if (gameState.isMultiplayer) {
-                // In a real implementation, this would update the database
-                console.log('Multiplayer answers submitted');
+                // Submit answers to Firebase
+                const playerAnswersRef = gameState.playersRef.child(gameState.playerId);
+                playerAnswersRef.update({
+                    answers: roundAnswers.answers,
+                    score: gameState.score,
+                    hasSubmitted: true
+                });
+                
                 showRoundResults();
             } else {
                 startRound();
             }
+        }
+
+        // Validate an answer
+        function validateAnswer(answer, category) {
+            // Check if starts with correct letter
+            if (answer.charAt(0).toUpperCase() !== gameState.currentLetter) {
+                return 'incorrect';
+            }
+            
+            // Check for duplicates with AI
+            if (gameState.gameMode === 'ai' && gameState.aiAnswers[category] && 
+                answer.toLowerCase() === gameState.aiAnswers[category].toLowerCase()) {
+                return 'duplicate';
+            }
+            
+            return 'correct';
         }
 
         // Show round results (multiplayer)
@@ -1092,32 +1286,53 @@
             const roundAnswersDisplay = document.getElementById('roundAnswersDisplay');
             roundAnswersDisplay.innerHTML = '';
             
-            // In a real implementation, this would show other players' answers
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'player-answer';
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'player-name';
-            nameSpan.textContent = gameState.playerName + ':';
-            
-            const answersDiv = document.createElement('div');
-            answersDiv.className = 'answer-list';
-            
-            const lastRound = gameState.answers[gameState.answers.length - 1];
-            Object.keys(lastRound.answers).forEach(category => {
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'answer-item';
-                answerDiv.textContent = `${category}: ${lastRound.answers[category]}`;
-                answersDiv.appendChild(answerDiv);
-            });
-            
-            playerDiv.appendChild(nameSpan);
-            playerDiv.appendChild(answersDiv);
-            roundAnswersDisplay.appendChild(playerDiv);
-            
-            // Continue button
-            document.getElementById('continueToNextRound').addEventListener('click', () => {
-                startRound();
+            // Get all players' answers from Firebase
+            gameState.playersRef.once('value').then(snapshot => {
+                const players = snapshot.val();
+                
+                Object.keys(players).forEach(playerId => {
+                    const player = players[playerId];
+                    if (player.answers) {
+                        const playerDiv = document.createElement('div');
+                        playerDiv.className = 'player-answer';
+                        
+                        const nameSpan = document.createElement('span');
+                        nameSpan.className = 'player-name';
+                        nameSpan.textContent = player.name + ':';
+                        
+                        const scoreSpan = document.createElement('span');
+                        scoreSpan.className = 'score';
+                        scoreSpan.textContent = `Score: ${player.score || 0}`;
+                        
+                        const answersDiv = document.createElement('div');
+                        answersDiv.className = 'answer-list';
+                        
+                        Object.keys(player.answers).forEach(category => {
+                            const answerDiv = document.createElement('div');
+                            answerDiv.className = 'answer-item';
+                            
+                            const answer = player.answers[category];
+                            const isValid = validateAnswer(answer, category);
+                            
+                            answerDiv.textContent = `${category}: ${answer}`;
+                            answerDiv.classList.add(isValid);
+                            
+                            answersDiv.appendChild(answerDiv);
+                        });
+                        
+                        playerDiv.appendChild(nameSpan);
+                        playerDiv.appendChild(scoreSpan);
+                        playerDiv.appendChild(answersDiv);
+                        roundAnswersDisplay.appendChild(playerDiv);
+                    }
+                });
+                
+                // Continue button
+                document.getElementById('continueToNextRound').addEventListener('click', () => {
+                    if (gameState.isHost) {
+                        startRound();
+                    }
+                });
             });
         }
 
@@ -1199,12 +1414,12 @@
                 const aiAnswer = (gameState.gameMode === 'ai' && gameState.aiAnswers[category]) || '-';
                 
                 let points = 0;
-                if (playerAnswer !== '-' && playerAnswer.charAt(0).toUpperCase() === round.letter) {
-                    points = 1;
+                if (playerAnswer !== '-') {
+                    const isValid = validateAnswer(playerAnswer, category);
                     
-                    if (gameState.gameMode === 'ai' && 
-                        aiAnswer !== '-' && 
-                        playerAnswer.toLowerCase() === aiAnswer.toLowerCase()) {
+                    if (isValid === 'correct') {
+                        points = 1;
+                    } else if (isValid === 'duplicate') {
                         points -= gameState.duplicatePenalty;
                     }
                 }
@@ -1212,7 +1427,7 @@
                 html += `
                     <tr>
                         <td>${category}</td>
-                        <td>${playerAnswer}</td>
+                        <td class="${playerAnswer !== '-' ? validateAnswer(playerAnswer, category) : ''}">${playerAnswer}</td>
                         ${gameState.gameMode === 'ai' ? 
                             `<td>${aiAnswer}</td>
                              <td>${points > 0 ? '+' + points : points}</td>` : 
@@ -1232,41 +1447,79 @@
             
             if (!gameState.isMultiplayer) return;
             
-            // In a real implementation, this would show other players' answers
-            const playerDiv = document.createElement('div');
-            playerDiv.className = 'player-answer';
-            
-            const nameSpan = document.createElement('span');
-            nameSpan.className = 'player-name';
-            nameSpan.textContent = gameState.playerName + ':';
-            
-            const scoreSpan = document.createElement('span');
-            scoreSpan.className = 'score';
-            scoreSpan.textContent = `Total: ${gameState.score || 0} points`;
-            
-            const answersDiv = document.createElement('div');
-            answersDiv.className = 'answer-list';
-            
-            // Show answers from last round
-            const lastRound = gameState.answers[gameState.answers.length - 1];
-            Object.keys(lastRound.answers).forEach(category => {
-                const answerDiv = document.createElement('div');
-                answerDiv.className = 'answer-item';
-                answerDiv.textContent = `${category}: ${lastRound.answers[category]}`;
-                answersDiv.appendChild(answerDiv);
+            // Get all players from Firebase
+            gameState.playersRef.once('value').then(snapshot => {
+                const players = snapshot.val();
+                
+                Object.keys(players).forEach(playerId => {
+                    const player = players[playerId];
+                    
+                    const playerDiv = document.createElement('div');
+                    playerDiv.className = 'player-answer';
+                    
+                    const nameSpan = document.createElement('span');
+                    nameSpan.className = 'player-name';
+                    nameSpan.textContent = player.name + ':';
+                    
+                    const scoreSpan = document.createElement('span');
+                    scoreSpan.className = 'score';
+                    scoreSpan.textContent = `Total: ${player.score || 0} points`;
+                    
+                    const answersDiv = document.createElement('div');
+                    answersDiv.className = 'answer-list';
+                    
+                    // Show answers from last round
+                    if (player.answers) {
+                        Object.keys(player.answers).forEach(category => {
+                            const answerDiv = document.createElement('div');
+                            answerDiv.className = 'answer-item';
+                            
+                            const answer = player.answers[category];
+                            const isValid = validateAnswer(answer, category);
+                            
+                            answerDiv.textContent = `${category}: ${answer}`;
+                            answerDiv.classList.add(isValid);
+                            
+                            answersDiv.appendChild(answerDiv);
+                        });
+                    }
+                    
+                    playerDiv.appendChild(nameSpan);
+                    playerDiv.appendChild(scoreSpan);
+                    playerDiv.appendChild(answersDiv);
+                    container.appendChild(playerDiv);
+                });
             });
-            
-            playerDiv.appendChild(nameSpan);
-            playerDiv.appendChild(scoreSpan);
-            playerDiv.appendChild(answersDiv);
-            container.appendChild(playerDiv);
         }
 
         // Reset the game
         function resetGame() {
             if (gameState.isMultiplayer) {
-                // In a real app, this would notify other players
-                startGame();
+                // Reset game state in Firebase if host
+                if (gameState.isHost) {
+                    gameState.gameRef.update({
+                        currentRound: 0,
+                        currentLetter: '',
+                        timeLeft: gameState.timeLeft,
+                        gameStarted: false
+                    });
+                    
+                    // Reset all players' states
+                    gameState.playersRef.once('value').then(snapshot => {
+                        const players = snapshot.val();
+                        Object.keys(players).forEach(playerId => {
+                            gameState.playersRef.child(playerId).update({
+                                answers: null,
+                                score: 0,
+                                hasSubmitted: false,
+                                isReady: false
+                            });
+                        });
+                    });
+                }
+                
+                // Return to lobby
+                showPanel('roomLobbyPanel');
             } else {
                 hideAllPanels();
                 startGame();
@@ -1297,12 +1550,49 @@
             gameState.roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
             gameState.isMultiplayer = true;
             gameState.isHost = true;
+            gameState.totalRounds = parseInt(elements.roomRounds.value);
             
-            // In a real implementation, this would create a room in the database
-            console.log(`Room created with code: ${gameState.roomCode}`);
+            // Create room in Firebase
+            gameState.roomRef = database.ref('rooms/' + gameState.roomCode);
+            gameState.playersRef = gameState.roomRef.child('players');
+            gameState.gameRef = gameState.roomRef.child('game');
+            gameState.chatRef = gameState.roomRef.child('chat');
+            
+            // Set initial room data
+            gameState.roomRef.set({
+                hostId: gameState.playerId,
+                timeLimit: parseInt(elements.roomTimeLimit.value),
+                rounds: gameState.totalRounds,
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            // Set initial game state
+            gameState.gameRef.set({
+                currentRound: 0,
+                currentLetter: '',
+                timeLeft: parseInt(elements.roomTimeLimit.value),
+                gameStarted: false
+            });
+            
+            // Add player to room
+            addPlayerToRoom();
             
             elements.displayRoomCode.textContent = gameState.roomCode;
             showPanel('roomLobbyPanel');
+            
+            // Set up realtime listeners
+            setupRoomListeners();
+        }
+
+        // Add player to room
+        function addPlayerToRoom() {
+            gameState.playersRef.child(gameState.playerId).set({
+                name: gameState.playerName,
+                score: 0,
+                isReady: false,
+                hasSubmitted: false,
+                answers: null
+            });
         }
 
         // Join a room
@@ -1318,11 +1608,113 @@
             gameState.isHost = false;
             gameState.roomCode = roomCode;
             
-            // In a real implementation, this would check if the room exists
-            console.log(`Joining room: ${roomCode}`);
+            // Check if room exists
+            database.ref('rooms/' + roomCode).once('value').then(snapshot => {
+                if (!snapshot.exists()) {
+                    alert('Room not found. Please check the code and try again.');
+                    return;
+                }
+                
+                // Set up room references
+                gameState.roomRef = database.ref('rooms/' + roomCode);
+                gameState.playersRef = gameState.roomRef.child('players');
+                gameState.gameRef = gameState.roomRef.child('game');
+                gameState.chatRef = gameState.roomRef.child('chat');
+                
+                // Get room settings
+                const roomData = snapshot.val();
+                gameState.totalRounds = roomData.rounds || 5;
+                
+                // Add player to room
+                addPlayerToRoom();
+                
+                elements.displayRoomCode.textContent = roomCode;
+                showPanel('roomLobbyPanel');
+                
+                // Set up realtime listeners
+                setupRoomListeners();
+            });
+        }
+
+        // Set up room listeners
+        function setupRoomListeners() {
+            // Listen for player changes
+            gameState.playersRef.on('value', snapshot => {
+                updatePlayerList(snapshot.val());
+            });
             
-            elements.displayRoomCode.textContent = roomCode;
-            showPanel('roomLobbyPanel');
+            // Listen for game state changes
+            gameState.gameRef.on('value', snapshot => {
+                const gameData = snapshot.val();
+                if (!gameData) return;
+                
+                if (gameData.gameStarted) {
+                    // Update game state
+                    gameState.currentRound = gameData.currentRound;
+                    gameState.currentLetter = gameData.currentLetter;
+                    gameState.timeLeft = gameData.timeLeft;
+                    
+                    // Start the round if not already playing
+                    if (!gameState.isPlaying) {
+                        gameState.isPlaying = true;
+                        hideAllPanels();
+                        showPanel('gameAreaPanel');
+                        startRound();
+                    }
+                }
+            });
+            
+            // Listen for chat messages
+            gameState.chatRef.limitToLast(50).on('child_added', snapshot => {
+                const message = snapshot.val();
+                addChatMessage(message.sender, message.text, message.timestamp);
+            });
+        }
+
+        // Update player list
+        function updatePlayerList(players) {
+            if (!players) return;
+            
+            elements.playerList.innerHTML = '';
+            let playerCount = 0;
+            let allReady = true;
+            
+            Object.keys(players).forEach(playerId => {
+                const player = players[playerId];
+                playerCount++;
+                
+                const li = document.createElement('li');
+                const statusClass = player.isReady ? 'ready' : 'not-ready';
+                
+                li.innerHTML = `
+                    <span class="player-status ${statusClass}"></span>
+                    ${player.name} ${playerId === gameState.roomRef.child('hostId').key ? '(Host)' : ''}
+                `;
+                
+                elements.playerList.appendChild(li);
+                
+                if (playerId !== gameState.playerId && !player.isReady) {
+                    allReady = false;
+                }
+            });
+            
+            elements.playerCount.textContent = playerCount;
+            
+            // Update ready button text
+            if (gameState.isReady) {
+                elements.readyBtn.textContent = 'Not Ready';
+                elements.readyBtn.classList.remove('btn-success');
+                elements.readyBtn.classList.add('btn-warning');
+            } else {
+                elements.readyBtn.textContent = 'I\'m Ready!';
+                elements.readyBtn.classList.add('btn-success');
+                elements.readyBtn.classList.remove('btn-warning');
+            }
+            
+            // Start game if host and all players are ready
+            if (gameState.isHost && playerCount >= 2 && allReady && !gameState.isPlaying) {
+                startGame();
+            }
         }
 
         // Copy room code to clipboard
@@ -1331,54 +1723,109 @@
             alert('Room code copied to clipboard!');
         }
 
-        // Toggle ready status
-        function toggleReady() {
-            // In a real implementation, this would update the database
-            console.log('Ready status toggled');
-            
-            // For demo purposes, just start the game if host
-            if (gameState.isHost) {
-                startGame();
-            }
+        // Share room code via WhatsApp
+        function shareViaWhatsApp() {
+            const message = `Join my NPAT game! Room code: ${gameState.roomCode}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
         }
 
-        // Update player list
-        function updatePlayerList() {
-            elements.playerList.innerHTML = '';
+        // Share room code via SMS
+        function shareViaSMS() {
+            const message = `Join my NPAT game! Room code: ${gameState.roomCode}`;
+            const url = `sms:?body=${encodeURIComponent(message)}`;
+            window.open(url, '_blank');
+        }
+
+        // Toggle ready status
+        function toggleReady() {
+            gameState.isReady = !gameState.isReady;
             
-            // In a real implementation, this would show other players
-            const li = document.createElement('li');
-            const statusClass = 'ready';
+            // Update player status in Firebase
+            gameState.playersRef.child(gameState.playerId).update({
+                isReady: gameState.isReady
+            });
+        }
+
+        // Send chat message
+        function sendChatMessage() {
+            const message = elements.chatInput.value.trim();
+            if (!message) return;
             
-            li.innerHTML = `
-                <span class="player-status ${statusClass}"></span>
-                ${gameState.playerName} ${gameState.isHost ? '(Host)' : ''}
+            // Add message to Firebase
+            gameState.chatRef.push({
+                sender: gameState.playerName,
+                text: message,
+                timestamp: firebase.database.ServerValue.TIMESTAMP
+            });
+            
+            elements.chatInput.value = '';
+        }
+
+        // Add chat message to UI
+        function addChatMessage(sender, text, timestamp) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'message';
+            
+            const time = new Date(timestamp);
+            const timeString = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+            
+            messageDiv.innerHTML = `
+                <span class="message-sender">${sender}</span>
+                <span class="message-time">${timeString}</span>
+                <div>${text}</div>
             `;
             
-            elements.playerList.appendChild(li);
-            elements.playerCount.textContent = 1;
-            
-            // Update ready button text
-            elements.readyBtn.textContent = 'I\'m Ready!';
-            elements.readyBtn.classList.add('btn-success');
-            elements.readyBtn.classList.remove('btn-warning');
+            elements.chatMessages.appendChild(messageDiv);
+            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
         }
 
         // Leave the room
         function leaveRoom() {
+            if (gameState.isMultiplayer) {
+                // Remove player from Firebase
+                if (gameState.playersRef) {
+                    gameState.playersRef.child(gameState.playerId).remove();
+                }
+                
+                // Clean up references
+                if (gameState.roomRef) {
+                    gameState.roomRef.off();
+                    gameState.playersRef.off();
+                    gameState.gameRef.off();
+                    gameState.chatRef.off();
+                }
+                
+                // If host and no players left, delete the room
+                if (gameState.isHost) {
+                    gameState.playersRef.once('value').then(snapshot => {
+                        if (!snapshot.hasChildren()) {
+                            gameState.roomRef.remove();
+                        }
+                    });
+                }
+            }
+            
+            // Reset multiplayer state
             gameState.isMultiplayer = false;
             gameState.isHost = false;
             gameState.roomCode = '';
             gameState.players = {};
+            gameState.isPlaying = false;
+            gameState.isReady = false;
             
             hideAllPanels();
         }
 
         // Initialize multiplayer
         function initializeMultiplayer() {
-            // In a real implementation, this would initialize Firebase
-            console.log('Initializing multiplayer');
-            updatePlayerList();
+            updatePlayerList({ [gameState.playerId]: {
+                name: gameState.playerName,
+                score: 0,
+                isReady: false,
+                hasSubmitted: false,
+                answers: null
+            }});
         }
 
         // Start the game
