@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flag Quiz | Mind Games</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .flag-display {
+            margin: 20px 0;
+        }
+        
+        .flag-img {
+            max-width: 300px;
+            max-height: 200px;
+            border: 1px solid #ccc;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .option-btn {
+            padding: 10px;
+            background-color: white;
+            border: 2px solid var(--primary);
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .option-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .option-btn.correct {
+            background-color: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+        
+        .option-btn.incorrect {
+            background-color: var(--danger);
+            color: white;
+            border-color: var(--danger);
+        }
+        
+        .score-display {
+            font-size: 1.2rem;
+            margin: 20px 0;
+        }
+        
+        .timer-display {
+            font-size: 1.5rem;
+            margin: 10px 0;
+            color: var(--secondary);
+        }
+        
+        .feedback {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            min-height: 30px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .settings {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Flag Quiz</h1>
+            <p>Guess the country from its flag</p>
+        </header>
+        
+        <div class="game-container">
+            <div id="modeSelection">
+                <h2>Select Game Mode</h2>
+                <div class="settings">
+                    <label for="region">Region:</label>
+                    <select id="region">
+                        <option value="all" selected>All Countries</option>
+                        <option value="europe">Europe</option>
+                        <option value="asia">Asia</option>
+                        <option value="africa">Africa</option>
+                        <option value="americas">Americas</option>
+                        <option value="oceania">Oceania</option>
+                    </select>
+                    
+                    <label for="difficulty" style="margin-left: 15px;">Difficulty:</label>
+                    <select id="difficulty">
+                        <option value="easy">Easy (4 options)</option>
+                        <option value="medium" selected>Medium (6 options)</option>
+                        <option value="hard">Hard (8 options)</option>
+                    </select>
+                </div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" id="startGameBtn">Start Game</button>
+                </div>
+            </div>
+            
+            <div id="gameArea" class="hidden">
+                <div class="score-display">Score: <span id="score">0</span> / <span id="total">0</span></div>
+                <div class="flag-display">
+                    <img id="flagImage" class="flag-img" src="" alt="Country flag">
+                </div>
+                <div class="options-container" id="optionsContainer"></div>
+                <div class="feedback" id="feedback"></div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" id="nextFlagBtn">Next Flag</button>
+                    <button class="btn btn-danger" id="endGameBtn">End Game</button>
+                </div>
+            </div>
+            
+            <a href="index.html" class="back-btn">← Back to Main Menu</a>
+        </div>
+    </div>
+
+    <script>
+        // Country data with flag image URLs
+        const countryData = [
+            { name: "Afghanistan", code: "AF", region: "asia" },
+            { name: "Albania", code: "AL", region: "europe" },
+            { name: "Algeria", code: "DZ", region: "africa" },
+            { name: "Andorra", code: "AD", region: "europe" },
+            { name: "Angola", code: "AO", region: "africa" },
+            { name: "Argentina", code: "AR", region: "americas" },
+            { name: "Armenia", code: "AM", region: "asia" },
+            { name: "Australia", code: "AU", region: "oceania" },
+            { name: "Austria", code: "AT", region: "europe" },
+            { name: "Azerbaijan", code: "AZ", region: "asia" },
+            { name: "Bahamas", code: "BS", region: "americas" },
+            { name: "Bahrain", code: "BH", region: "asia" },
+            { name: "Bangladesh", code: "BD", region: "asia" },
+            { name: "Barbados", code: "BB", region: "americas" },
+            { name: "Belarus", code: "BY", region: "europe" },
+            { name: "Belgium", code: "BE", region: "europe" },
+            { name: "Belize", code: "BZ", region: "americas" },
+            { name: "Benin", code: "BJ", region: "africa" },
+            { name: "Bhutan", code: "BT", region: "asia" },
+            { name: "Bolivia", code: "BO", region: "americas" },
+            { name: "Botswana", code: "BW", region: "africa" },
+            { name: "Brazil", code: "BR", region: "americas" },
+            { name: "Brunei", code: "BN", region: "asia" },
+            { name: "Bulgaria", code: "BG", region: "europe" },
+            { name: "Burkina Faso", code: "BF", region: "africa" },
+            { name: "Burundi", code: "BI", region: "africa" },
+            { name: "Cambodia", code: "KH", region: "asia" },
+            { name: "Cameroon", code: "CM", region: "africa" },
+            { name: "Canada", code: "CA", region: "americas" },
+            { name: "Chile", code: "CL", region: "americas" },
+            { name: "China", code: "CN", region: "asia" },
+            { name: "Colombia", code: "CO", region: "americas" },
+            { name: "Costa Rica", code: "CR", region: "americas" },
+            { name: "Croatia", code: "HR", region: "europe" },
+            { name: "Cuba", code: "CU", region: "americas" },
+            { name: "Cyprus", code: "CY", region: "europe" },
+            { name: "Czech Republic", code: "CZ", region: "europe" },
+            { name: "Denmark", code: "DK", region: "europe" },
+            { name: "Dominican Republic", code: "DO", region: "americas" },
+            { name: "Ecuador", code: "EC", region: "americas" },
+            { name: "Egypt", code: "EG", region: "africa" },
+            { name: "Estonia", code: "EE", region: "europe" },
+            { name: "Ethiopia", code: "ET", region: "africa" },
+            { name: "Fiji", code: "FJ", region: "oceania" },
+            { name: "Finland", code: "FI", region: "europe" },
+            { name: "France", code: "FR", region: "europe" },
+            { name: "Gabon", code: "GA", region: "africa" },
+            { name: "Gambia", code: "GM", region: "africa" },
+            { name: "Georgia", code: "GE", region: "asia" },
+            { name: "Germany", code: "DE", region: "europe" },
+            { name: "Ghana", code: "GH", region: "africa" },
+            { name: "Greece", code: "GR", region: "europe" },
+            { name: "Guatemala", code: "GT", region: "americas" },
+            { name: "Guinea", code: "GN", region: "africa" },
+            { name: "Haiti", code: "HT", region: "americas" },
+            { name: "Honduras", code: "HN", region: "americas" },
+            { name: "Hungary", code: "HU", region: "europe" },
+            { name: "Iceland", code: "IS", region: "europe" },
+            { name: "India", code: "IN", region: "asia" },
+            { name: "Indonesia", code: "ID", region: "asia" },
+            { name: "Iran", code: "IR", region: "asia" },
+            { name: "Iraq", code: "IQ", region: "asia" },
+            { name: "Ireland", code: "IE", region: "europe" },
+            { name: "Israel", code: "IL", region: "asia" },
+            { name: "Italy", code: "IT", region: "europe" },
+            { name: "Jamaica", code: "JM", region: "americas" },
+            { name: "Japan", code: "JP", region: "asia" },
+            { name: "Jordan", code: "JO", region: "asia" },
+            { name: "Kazakhstan", code: "KZ", region: "asia" },
+            { name: "Kenya", code: "KE", region: "africa" },
+            { name: "Kuwait", code: "KW", region: "asia" },
+            { name: "Laos", code: "LA", region: "asia" },
+            { name: "Latvia", code: "LV", region: "europe" },
+            { name: "Lebanon", code: "LB", region: "asia" },
+            { name: "Liberia", code: "LR", region: "africa" },
+            { name: "Libya", code: "LY", region: "africa" },
+            { name: "Lithuania", code: "LT", region: "europe" },
+            { name: "Luxembourg", code: "LU", region: "europe" },
+            { name: "Madagascar", code: "MG", region: "africa" },
+            { name: "Malaysia", code: "MY", region: "asia" },
+            { name: "Maldives", code: "MV", region: "asia" },
+            { name: "Mali", code: "ML", region: "africa" },
+            { name: "Malta", code: "MT", region: "europe" },
+            { name: "Mexico", code: "MX", region: "americas" },
+            { name: "Moldova", code: "MD", region: "europe" },
+            { name: "Monaco", code: "MC", region: "europe" },
+            { name: "Mongolia", code: "MN", region: "asia" },
+            { name: "Montenegro", code: "ME", region: "europe" },
+            { name: "Morocco", code: "MA", region: "africa" },
+            { name: "Mozambique", code: "MZ", region: "africa" },
+            { name: "Myanmar", code: "MM", region: "asia" },
+            { name: "Namibia", code: "NA", region: "africa" },
+            { name: "Nepal", code: "NP", region: "asia" },
+            { name: "Netherlands", code: "NL", region: "europe" },
+            { name: "New Zealand", code: "NZ", region: "oceania" },
+            { name: "Nicaragua", code: "NI", region: "americas" },
+            { name: "Niger", code: "NE", region: "africa" },
+            { name: "Nigeria", code: "NG", region: "africa" },
+            { name: "North Korea", code: "KP", region: "asia" },
+            { name: "Norway", code: "NO", region: "europe" },
+            { name: "Oman", code: "OM", region: "asia" },
+            { name: "Pakistan", code: "PK", region: "asia" },
+            { name: "Panama", code: "PA", region: "americas" },
+            { name: "Paraguay", code: "PY", region: "americas" },
+            { name: "Peru", code: "PE", region: "americas" },
+            { name: "Philippines", code: "PH", region: "asia" },
+            { name: "Poland", code: "PL", region: "europe" },
+            { name: "Portugal", code: "PT", region: "europe" },
+            { name: "Qatar", code: "QA", region: "asia" },
+            { name: "Romania", code: "RO", region: "europe" },
+            { name: "Russia", code: "RU", region: "europe" },
+            { name: "Rwanda", code: "RW", region: "africa" },
+            { name: "Saudi Arabia", code: "SA", region: "asia" },
+            { name: "Senegal", code: "SN", region: "africa" },
+            { name: "Serbia", code: "RS", region: "europe" },
+            { name: "Singapore", code: "SG", region: "asia" },
+            { name: "Slovakia", code: "SK", region: "europe" },
+            { name: "Slovenia", code: "SI", region: "europe" },
+            { name: "Somalia", code: "SO", region: "africa" },
+            { name: "South Africa", code: "ZA", region: "africa" },
+            { name: "South Korea", code: "KR", region: "asia" },
+            { name: "Spain", code: "ES", region: "europe" },
+            { name: "Sri Lanka", code: "LK", region: "asia" },
+            { name: "Sudan", code: "SD", region: "africa" },
+            { name: "Sweden", code: "SE", region: "europe" },
+            { name: "Switzerland", code: "CH", region: "europe" },
+            { name: "Syria", code: "SY", region: "asia" },
+            { name: "Taiwan", code: "TW", region: "asia" },
+            { name: "Tajikistan", code: "TJ", region: "asia" },
+            { name: "Tanzania", code: "TZ", region: "africa" },
+            { name: "Thailand", code: "TH", region: "asia" },
+            { name: "Togo", code: "TG", region: "africa" },
+            { name: "Tunisia", code: "TN", region: "africa" },
+            { name: "Turkey", code: "TR", region: "asia" },
+            { name: "Uganda", code: "UG", region: "africa" },
+            { name: "Ukraine", code: "UA", region: "europe" },
+            { name: "United Arab Emirates", code: "AE", region: "asia" },
+            { name: "United Kingdom", code: "GB", region: "europe" },
+            { name: "United States", code: "US", region: "americas" },
+            { name: "Uruguay", code: "UY", region: "americas" },
+            { name: "Uzbekistan", code: "UZ", region: "asia" },
+            { name: "Venezuela", code: "VE", region: "americas" },
+            { name: "Vietnam", code: "VN", region: "asia" },
+            { name: "Yemen", code: "YE", region: "asia" },
+            { name: "Zambia", code: "ZM", region: "africa" },
+            { name: "Zimbabwe", code: "ZW", region: "africa" }
+        ];
+
+        // Game state
+        const gameState = {
+            currentCountry: null,
+            options: [],
+            score: 0,
+            total: 0,
+            region: 'all',
+            difficulty: 'medium',
+            gameActive: false
+        };
+
+        // DOM elements
+        const elements = {
+            modeSelection: document.getElementById('modeSelection'),
+            gameArea: document.getElementById('gameArea'),
+            flagImage: document.getElementById('flagImage'),
+            optionsContainer: document.getElementById('optionsContainer'),
+            feedback: document.getElementById('feedback'),
+            scoreDisplay: document.getElementById('score'),
+            totalDisplay: document.getElementById('total'),
+            startGameBtn: document.getElementById('startGameBtn'),
+            nextFlagBtn: document.getElementById('nextFlagBtn'),
+            endGameBtn: document.getElementById('endGameBtn'),
+            region: document.getElementById('region'),
+            difficulty: document.getElementById('difficulty')
+        };
+
+        // Initialize the game
+        function initGame() {
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        // Start a new game
+        function startGame() {
+            gameState.region = elements.region.value;
+            gameState.difficulty = elements.difficulty.value;
+            gameState.score = 0;
+            gameState.total = 0;
+            gameState.gameActive = true;
+            
+            // Update UI
+            elements.scoreDisplay.textContent = '0';
+            elements.totalDisplay.textContent = '0';
+            elements.feedback.textContent = '';
+            
+            // Show game area
+            elements.modeSelection.classList.add('hidden');
+            elements.gameArea.classList.remove('hidden');
+            
+            // Show first flag
+            showNextFlag();
+        }
+
+        // End the current game
+        function endGame() {
+            gameState.gameActive = false;
+            
+            // Show final score
+            alert(`Game ended. Your final score is ${gameState.score} out of ${gameState.total}`);
+            
+            // Return to mode selection
+            elements.modeSelection.classList.remove('hidden');
+            elements.gameArea.classList.add('hidden');
+        }
+
+        // Show the next flag
+        function showNextFlag() {
+            if (!gameState.gameActive) return;
+            
+            // Filter countries by selected region
+            let filteredCountries = countryData;
+            if (gameState.region !== 'all') {
+                filteredCountries = countryData.filter(country => country.region === gameState.region);
+            }
+            
+            // Select a random country
+            const randomIndex = Math.floor(Math.random() * filteredCountries.length);
+            gameState.currentCountry = filteredCountries[randomIndex];
+            
+            // Set flag image
+            elements.flagImage.src = `https://flagcdn.com/w160/${gameState.currentCountry.code.toLowerCase()}.png`;
+            elements.flagImage.alt = `${gameState.currentCountry.name} flag`;
+            
+            // Generate options
+            generateOptions();
+            
+            // Increment total
+            gameState.total++;
+            elements.totalDisplay.textContent = gameState.total;
+            
+            // Clear feedback
+            elements.feedback.textContent = '';
+        }
+
+        // Generate answer options
+        function generateOptions() {
+            // Determine number of options based on difficulty
+            let numOptions;
+            switch (gameState.difficulty) {
+                case 'easy': numOptions = 4; break;
+                case 'medium': numOptions = 6; break;
+                case 'hard': numOptions = 8; break;
+            }
+            
+            // Filter countries by selected region
+            let filteredCountries = countryData;
+            if (gameState.region !== 'all') {
+                filteredCountries = countryData.filter(country => country.region === gameState.region);
+            }
+            
+            // Create array of options including the correct answer
+            const options = [gameState.currentCountry.name];
+            
+            // Add incorrect options
+            while (options.length < numOptions) {
+                const randomIndex = Math.floor(Math.random() * filteredCountries.length);
+                const randomCountry = filteredCountries[randomIndex].name;
+                
+                if (!options.includes(randomCountry)) {
+                    options.push(randomCountry);
+                }
+            }
+            
+            // Shuffle options
+            gameState.options = shuffleArray(options);
+            
+            // Display options
+            displayOptions();
+        }
+
+        // Display options as buttons
+        function displayOptions() {
+            elements.optionsContainer.innerHTML = '';
+            
+            gameState.options.forEach(option => {
+                const button = document.createElement('button');
+                button.className = 'option-btn';
+                button.textContent = option;
+                button.addEventListener('click', () => checkAnswer(option));
+                elements.optionsContainer.appendChild(button);
+            });
+        }
+
+        // Check the selected answer
+        function checkAnswer(selectedOption) {
+            if (!gameState.gameActive) return;
+            
+            // Disable all option buttons
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Check if answer is correct
+            if (selectedOption === gameState.currentCountry.name) {
+                // Correct answer
+                gameState.score++;
+                elements.scoreDisplay.textContent = gameState.score;
+                elements.feedback.textContent = 'Correct!';
+                elements.feedback.className = 'feedback correct';
+                
+                // Highlight correct answer
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    if (btn.textContent === gameState.currentCountry.name) {
+                        btn.classList.add('correct');
+                    }
+                });
+            } else {
+                // Incorrect answer
+                elements.feedback.textContent = `Incorrect. The correct answer is ${gameState.currentCountry.name}`;
+                elements.feedback.className = 'feedback incorrect';
+                
+                // Highlight correct and incorrect answers
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    if (btn.textContent === gameState.currentCountry.name) {
+                        btn.classList.add('correct');
+                    } else if (btn.textContent === selectedOption) {
+                        btn.classList.add('incorrect');
+                    }
+                });
+            }
+        }
+
+        // Shuffle an array
+        function shuffleArray(array) {
+            const newArray = [...array];
+            for (let i = newArray.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+            }
+            return newArray;
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Start game button
+            elements.startGameBtn.addEventListener('click', startGame);
+            
+            // Next flag button
+            elements.nextFlagBtn.addEventListener('click', showNextFlag);
+            
+            // End game button
+            elements.endGameBtn.addEventListener('click', endGame);
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>

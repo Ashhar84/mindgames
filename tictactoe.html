@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic Tac Toe | Mind Games</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .game-board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin: 30px auto;
+            width: 300px;
+            height: 300px;
+        }
+        
+        .cell {
+            background-color: white;
+            border: 2px solid #333;
+            border-radius: 5px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cell:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .cell.x {
+            color: var(--primary);
+        }
+        
+        .cell.o {
+            color: var(--danger);
+        }
+        
+        .game-info {
+            margin: 20px 0;
+            font-size: 1.2rem;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .difficulty-selector {
+            margin: 20px 0;
+        }
+        
+        select {
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Tic Tac Toe</h1>
+            <p>The classic X and O game</p>
+        </header>
+        
+        <div class="game-container">
+            <div class="game-info" id="gameStatus">Your turn (X)</div>
+            
+            <div class="difficulty-selector">
+                <label for="difficulty">AI Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="hard">Hard</option>
+                </select>
+            </div>
+            
+            <div class="game-board" id="gameBoard">
+                <!-- Cells will be added by JavaScript -->
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="newGameBtn">New Game</button>
+                <button class="btn btn-danger" id="resetScoreBtn">Reset Score</button>
+            </div>
+            
+            <div class="scoreboard">
+                <p>Wins: <span id="wins">0</span> | Losses: <span id="losses">0</span> | Ties: <span id="ties">0</span></p>
+            </div>
+            
+            <a href="index.html" class="back-btn">← Back to Main Menu</a>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            board: ['', '', '', '', '', '', '', '', ''],
+            currentPlayer: 'X',
+            gameActive: true,
+            scores: {
+                wins: 0,
+                losses: 0,
+                ties: 0
+            },
+            difficulty: 'medium'
+        };
+
+        // DOM elements
+        const elements = {
+            gameBoard: document.getElementById('gameBoard'),
+            gameStatus: document.getElementById('gameStatus'),
+            newGameBtn: document.getElementById('newGameBtn'),
+            resetScoreBtn: document.getElementById('resetScoreBtn'),
+            wins: document.getElementById('wins'),
+            losses: document.getElementById('losses'),
+            ties: document.getElementById('ties'),
+            difficulty: document.getElementById('difficulty')
+        };
+
+        // Winning combinations
+        const winningConditions = [
+            [0, 1, 2], [3, 4, 5], [6, 7, 8], // rows
+            [0, 3, 6], [1, 4, 7], [2, 5, 8], // columns
+            [0, 4, 8], [2, 4, 6]             // diagonals
+        ];
+
+        // Initialize the game
+        function initGame() {
+            // Create board cells
+            elements.gameBoard.innerHTML = '';
+            for (let i = 0; i < 9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.addEventListener('click', handleCellClick);
+                elements.gameBoard.appendChild(cell);
+            }
+            
+            // Reset game state
+            gameState.board = ['', '', '', '', '', '', '', '', ''];
+            gameState.currentPlayer = 'X';
+            gameState.gameActive = true;
+            
+            // Update game status
+            elements.gameStatus.textContent = "Your turn (X)";
+            
+            // Load scores from localStorage
+            loadScores();
+        }
+
+        // Handle cell click
+        function handleCellClick(e) {
+            const cell = e.target;
+            const index = parseInt(cell.dataset.index);
+            
+            // If cell is already filled or game is not active, ignore click
+            if (gameState.board[index] !== '' || !gameState.gameActive) {
+                return;
+            }
+            
+            // Make player move
+            makeMove(index, 'X');
+            
+            // Check if game is over
+            if (checkGameOver()) {
+                return;
+            }
+            
+            // AI move
+            if (gameState.gameActive) {
+                setTimeout(makeAiMove, 500);
+            }
+        }
+
+        // Make a move
+        function makeMove(index, player) {
+            // Update board state
+            gameState.board[index] = player;
+            
+            // Update UI
+            const cell = document.querySelector(`.cell[data-index="${index}"]`);
+            cell.textContent = player;
+            cell.classList.add(player.toLowerCase());
+            
+            // Switch player
+            gameState.currentPlayer = player === 'X' ? 'O' : 'X';
+            
+            // Update game status
+            if (player === 'X') {
+                elements.gameStatus.textContent = "AI is thinking...";
+            } else {
+                elements.gameStatus.textContent = "Your turn (X)";
+            }
+        }
+
+        // Make AI move
+        function makeAiMove() {
+            let moveIndex;
+            
+            switch (gameState.difficulty) {
+                case 'easy':
+                    // Random move
+                    moveIndex = getRandomMove();
+                    break;
+                    
+                case 'medium':
+                    // 50% chance to make a smart move, 50% random
+                    if (Math.random() < 0.5) {
+                        moveIndex = getSmartMove();
+                    } else {
+                        moveIndex = getRandomMove();
+                    }
+                    break;
+                    
+                case 'hard':
+                    // Always make smart move
+                    moveIndex = getSmartMove();
+                    break;
+            }
+            
+            makeMove(moveIndex, 'O');
+            checkGameOver();
+        }
+
+        // Get a random available move
+        function getRandomMove() {
+            const availableMoves = [];
+            gameState.board.forEach((cell, index) => {
+                if (cell === '') {
+                    availableMoves.push(index);
+                }
+            });
+            
+            return availableMoves[Math.floor(Math.random() * availableMoves.length)];
+        }
+
+        // Get a smart move (try to win or block player)
+        function getSmartMove() {
+            // First check if AI can win
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState.board[a] === 'O' && gameState.board[b] === 'O' && gameState.board[c] === '') {
+                    return c;
+                }
+                if (gameState.board[a] === 'O' && gameState.board[c] === 'O' && gameState.board[b] === '') {
+                    return b;
+                }
+                if (gameState.board[b] === 'O' && gameState.board[c] === 'O' && gameState.board[a] === '') {
+                    return a;
+                }
+            }
+            
+            // Then check if player can win and block them
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                if (gameState.board[a] === 'X' && gameState.board[b] === 'X' && gameState.board[c] === '') {
+                    return c;
+                }
+                if (gameState.board[a] === 'X' && gameState.board[c] === 'X' && gameState.board[b] === '') {
+                    return b;
+                }
+                if (gameState.board[b] === 'X' && gameState.board[c] === 'X' && gameState.board[a] === '') {
+                    return a;
+                }
+            }
+            
+            // Try to take center if available
+            if (gameState.board[4] === '') {
+                return 4;
+            }
+            
+            // Try to take a corner if available
+            const corners = [0, 2, 6, 8];
+            const availableCorners = corners.filter(index => gameState.board[index] === '');
+            if (availableCorners.length > 0) {
+                return availableCorners[Math.floor(Math.random() * availableCorners.length)];
+            }
+            
+            // Otherwise take any available move
+            return getRandomMove();
+        }
+
+        // Check if game is over
+        function checkGameOver() {
+            let roundWon = false;
+            
+            // Check for win
+            for (let i = 0; i < winningConditions.length; i++) {
+                const [a, b, c] = winningConditions[i];
+                
+                if (gameState.board[a] === '' || gameState.board[b] === '' || gameState.board[c] === '') {
+                    continue;
+                }
+                
+                if (gameState.board[a] === gameState.board[b] && gameState.board[b] === gameState.board[c]) {
+                    roundWon = true;
+                    break;
+                }
+            }
+            
+            // If won, update scores and end game
+            if (roundWon) {
+                const winner = gameState.currentPlayer === 'O' ? 'X' : 'O';
+                endGame(winner);
+                return true;
+            }
+            
+            // Check for tie
+            if (!gameState.board.includes('')) {
+                endGame(null);
+                return true;
+            }
+            
+            return false;
+        }
+
+        // End the game
+        function endGame(winner) {
+            gameState.gameActive = false;
+            
+            if (winner === 'X') {
+                elements.gameStatus.textContent = "You win!";
+                gameState.scores.wins++;
+            } else if (winner === 'O') {
+                elements.gameStatus.textContent = "AI wins!";
+                gameState.scores.losses++;
+            } else {
+                elements.gameStatus.textContent = "It's a tie!";
+                gameState.scores.ties++;
+            }
+            
+            // Update score display
+            updateScoreDisplay();
+            
+            // Save scores to localStorage
+            saveScores();
+        }
+
+        // Update score display
+        function updateScoreDisplay() {
+            elements.wins.textContent = gameState.scores.wins;
+            elements.losses.textContent = gameState.scores.losses;
+            elements.ties.textContent = gameState.scores.ties;
+        }
+
+        // Save scores to localStorage
+        function saveScores() {
+            localStorage.setItem('ticTacToeScores', JSON.stringify(gameState.scores));
+        }
+
+        // Load scores from localStorage
+        function loadScores() {
+            const savedScores = localStorage.getItem('ticTacToeScores');
+            if (savedScores) {
+                gameState.scores = JSON.parse(savedScores);
+                updateScoreDisplay();
+            }
+        }
+
+        // Reset scores
+        function resetScores() {
+            gameState.scores = {
+                wins: 0,
+                losses: 0,
+                ties: 0
+            };
+            updateScoreDisplay();
+            saveScores();
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            elements.newGameBtn.addEventListener('click', initGame);
+            elements.resetScoreBtn.addEventListener('click', resetScores);
+            elements.difficulty.addEventListener('change', function() {
+                gameState.difficulty = this.value;
+            });
+        }
+
+        // Initialize the game when page loads
+        window.onload = function() {
+            initGame();
+            setupEventListeners();
+        };
+    </script>
+</body>
+</html>

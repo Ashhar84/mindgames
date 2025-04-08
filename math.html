@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Math Challenges | Mind Games</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-container {
+            max-width: 600px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .game-mode-selector {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .mode-btn {
+            padding: 15px;
+            background-color: white;
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .mode-btn:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .problem-display {
+            font-size: 2rem;
+            margin: 30px 0;
+            min-height: 60px;
+        }
+        
+        .answer-input {
+            font-size: 1.5rem;
+            padding: 10px;
+            width: 150px;
+            text-align: center;
+            border: 2px solid #ccc;
+            border-radius: 5px;
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .score-display {
+            font-size: 1.2rem;
+            margin: 20px 0;
+        }
+        
+        .timer-display {
+            font-size: 1.5rem;
+            margin: 10px 0;
+            color: var(--secondary);
+        }
+        
+        .feedback {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            min-height: 30px;
+        }
+        
+        .correct {
+            color: var(--success);
+        }
+        
+        .incorrect {
+            color: var(--danger);
+        }
+        
+        .settings {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 10px;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Math Challenges</h1>
+            <p>Test your calculation skills</p>
+        </header>
+        
+        <div class="game-container">
+            <div id="modeSelection">
+                <h2>Select Game Mode</h2>
+                <div class="game-mode-selector">
+                    <div class="mode-btn" data-mode="addition">Addition</div>
+                    <div class="mode-btn" data-mode="subtraction">Subtraction</div>
+                    <div class="mode-btn" data-mode="multiplication">Multiplication</div>
+                    <div class="mode-btn" data-mode="division">Division</div>
+                    <div class="mode-btn" data-mode="mixed">Mixed Operations</div>
+                    <div class="mode-btn" data-mode="timed">Timed Challenge</div>
+                </div>
+                
+                <div class="settings">
+                    <label for="difficulty">Difficulty:</label>
+                    <select id="difficulty">
+                        <option value="easy">Easy</option>
+                        <option value="medium" selected>Medium</option>
+                        <option value="hard">Hard</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="gameArea" class="hidden">
+                <div class="timer-display" id="timer">Time: 60s</div>
+                <div class="score-display">Score: <span id="score">0</span></div>
+                <div class="problem-display" id="problem"></div>
+                <input type="number" class="answer-input" id="answerInput" placeholder="?">
+                <div class="feedback" id="feedback"></div>
+                
+                <div class="controls">
+                    <button class="btn btn-primary" id="checkAnswerBtn">Check Answer</button>
+                    <button class="btn btn-danger" id="newProblemBtn">New Problem</button>
+                    <button class="btn btn-success" id="endGameBtn">End Game</button>
+                </div>
+            </div>
+            
+            <a href="index.html" class="back-btn">← Back to Main Menu</a>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            currentMode: null,
+            difficulty: 'medium',
+            score: 0,
+            timeLeft: 60,
+            timer: null,
+            currentProblem: null,
+            correctAnswer: null,
+            gameActive: false
+        };
+
+        // DOM elements
+        const elements = {
+            modeSelection: document.getElementById('modeSelection'),
+            gameArea: document.getElementById('gameArea'),
+            problem: document.getElementById('problem'),
+            answerInput: document.getElementById('answerInput'),
+            feedback: document.getElementById('feedback'),
+            scoreDisplay: document.getElementById('score'),
+            timerDisplay: document.getElementById('timer'),
+            checkAnswerBtn: document.getElementById('checkAnswerBtn'),
+            newProblemBtn: document.getElementById('newProblemBtn'),
+            endGameBtn: document.getElementById('endGameBtn'),
+            difficulty: document.getElementById('difficulty')
+        };
+
+        // Initialize the game
+        function initGame() {
+            // Set up event listeners
+            setupEventListeners();
+        }
+
+        // Start a new game
+        function startGame(mode) {
+            gameState.currentMode = mode;
+            gameState.difficulty = elements.difficulty.value;
+            gameState.score = 0;
+            gameState.gameActive = true;
+            
+            // Update UI
+            elements.scoreDisplay.textContent = '0';
+            elements.feedback.textContent = '';
+            elements.answerInput.value = '';
+            
+            // Show game area
+            elements.modeSelection.classList.add('hidden');
+            elements.gameArea.classList.remove('hidden');
+            
+            // Start timer if timed mode
+            if (mode === 'timed') {
+                gameState.timeLeft = 60;
+                elements.timerDisplay.classList.remove('hidden');
+                startTimer();
+            } else {
+                elements.timerDisplay.classList.add('hidden');
+            }
+            
+            // Generate first problem
+            generateProblem();
+            
+            // Focus answer input
+            elements.answerInput.focus();
+        }
+
+        // End the current game
+        function endGame() {
+            gameState.gameActive = false;
+            clearInterval(gameState.timer);
+            
+            // Show final score
+            if (gameState.currentMode === 'timed') {
+                alert(`Time's up! Your final score is ${gameState.score}`);
+            } else {
+                alert(`Game ended. Your final score is ${gameState.score}`);
+            }
+            
+            // Return to mode selection
+            elements.modeSelection.classList.remove('hidden');
+            elements.gameArea.classList.add('hidden');
+        }
+
+        // Start the timer
+        function startTimer() {
+            clearInterval(gameState.timer);
+            updateTimerDisplay();
+            
+            gameState.timer = setInterval(() => {
+                gameState.timeLeft--;
+                updateTimerDisplay();
+                
+                if (gameState.timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // Update timer display
+        function updateTimerDisplay() {
+            elements.timerDisplay.textContent = `Time: ${gameState.timeLeft}s`;
+        }
+
+        // Generate a new math problem
+        function generateProblem() {
+            let num1, num2, operator;
+            
+            // Determine numbers based on difficulty
+            switch (gameState.difficulty) {
+                case 'easy':
+                    num1 = Math.floor(Math.random() * 10) + 1;
+                    num2 = Math.floor(Math.random() * 10) + 1;
+                    break;
+                    
+                case 'medium':
+                    num1 = Math.floor(Math.random() * 50) + 1;
+                    num2 = Math.floor(Math.random() * 50) + 1;
+                    break;
+                    
+                case 'hard':
+                    num1 = Math.floor(Math.random() * 100) + 1;
+                    num2 = Math.floor(Math.random() * 100) + 1;
+                    break;
+            }
+            
+            // Determine operator based on mode
+            if (gameState.currentMode === 'mixed') {
+                const operators = ['+', '-', '*', '/'];
+                operator = operators[Math.floor(Math.random() * operators.length)];
+            } else {
+                switch (gameState.currentMode) {
+                    case 'addition': operator = '+'; break;
+                    case 'subtraction': operator = '-'; break;
+                    case 'multiplication': operator = '*'; break;
+                    case 'division': operator = '/'; break;
+                    case 'timed': operator = ['+', '-', '*', '/'][Math.floor(Math.random() * 4)]; break;
+                }
+            }
+            
+            // For division, ensure it divides evenly
+            if (operator === '/') {
+                const product = num1 * num2;
+                num1 = product;
+            }
+            
+            // Calculate correct answer
+            let answer;
+            switch (operator) {
+                case '+': answer = num1 + num2; break;
+                case '-': answer = num1 - num2; break;
+                case '*': answer = num1 * num2; break;
+                case '/': answer = num1 / num2; break;
+            }
+            
+            // Store problem and answer
+            gameState.currentProblem = `${num1} ${operator} ${num2}`;
+            gameState.correctAnswer = answer;
+            
+            // Display problem
+            elements.problem.textContent = gameState.currentProblem + ' = ?';
+            elements.answerInput.value = '';
+            elements.feedback.textContent = '';
+        }
+
+        // Check the user's answer
+        function checkAnswer() {
+            if (!gameState.gameActive) return;
+            
+            const userAnswer = parseFloat(elements.answerInput.value);
+            
+            if (isNaN(userAnswer)) {
+                elements.feedback.textContent = 'Please enter a valid number';
+                elements.feedback.className = 'feedback incorrect';
+                return;
+            }
+            
+            // Round to 2 decimal places for comparison
+            const roundedUserAnswer = Math.round(userAnswer * 100) / 100;
+            const roundedCorrectAnswer = Math.round(gameState.correctAnswer * 100) / 100;
+            
+            if (roundedUserAnswer === roundedCorrectAnswer) {
+                // Correct answer
+                gameState.score += 1;
+                elements.scoreDisplay.textContent = gameState.score;
+                elements.feedback.textContent = 'Correct!';
+                elements.feedback.className = 'feedback correct';
+                
+                // Generate new problem after delay
+                setTimeout(generateProblem, 1000);
+            } else {
+                // Incorrect answer
+                elements.feedback.textContent = `Incorrect. The answer is ${gameState.correctAnswer}`;
+                elements.feedback.className = 'feedback incorrect';
+                
+                // Generate new problem after delay
+                setTimeout(generateProblem, 1500);
+            }
+            
+            elements.answerInput.value = '';
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Mode selection buttons
+            document.querySelectorAll('.mode-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    startGame(this.dataset.mode);
+                });
+            });
+            
+            // Check answer button
+            elements.checkAnswerBtn.addEventListener('click', checkAnswer);
+            
+            // New problem button
+            elements.newProblemBtn.addEventListener('click', generateProblem);
+            
+            // End game button
+            elements.endGameBtn.addEventListener('click', endGame);
+            
+            // Answer input - check on Enter key
+            elements.answerInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    checkAnswer();
+                }
+            });
+            
+            // Difficulty selector
+            elements.difficulty.addEventListener('change', function() {
+                gameState.difficulty = this.value;
+            });
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
