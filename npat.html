@@ -599,6 +599,15 @@
             </div>
         </div>
         
+        <div class="panel" id="multiplayerOptionsPanel">
+            <h2>Multiplayer Options</h2>
+            <div class="controls">
+                <button class="btn btn-success" id="createRoomBtn">Create New Room</button>
+                <button class="btn btn-accent" id="joinRoomBtn">Join Existing Room</button>
+                <button class="btn btn-danger" id="backFromMultiplayerBtn">Back</button>
+            </div>
+        </div>
+        
         <div class="panel" id="createRoomPanel">
             <h2>Create New Game Room</h2>
             <div class="setting-option">
@@ -765,6 +774,7 @@
             settingsPanel: document.getElementById('settingsPanel'),
             gameModePanel: document.getElementById('gameModePanel'),
             categoryPanel: document.getElementById('categoryPanel'),
+            multiplayerOptionsPanel: document.getElementById('multiplayerOptionsPanel'),
             createRoomPanel: document.getElementById('createRoomPanel'),
             joinRoomPanel: document.getElementById('joinRoomPanel'),
             roomLobbyPanel: document.getElementById('roomLobbyPanel'),
@@ -804,6 +814,11 @@
             aiDifficulty: document.getElementById('aiDifficulty'),
             difficultyLevel: document.getElementById('difficultyLevel'),
             cancelModeBtn: document.getElementById('cancelModeBtn'),
+            
+            // Multiplayer options
+            createRoomBtn: document.getElementById('createRoomBtn'),
+            joinRoomBtn: document.getElementById('joinRoomBtn'),
+            backFromMultiplayerBtn: document.getElementById('backFromMultiplayerBtn'),
             
             // Room creation elements
             roomTimeLimit: document.getElementById('roomTimeLimit'),
@@ -880,10 +895,13 @@
             elements.difficultyLevel.addEventListener('change', updateAiDifficulty);
             
             // Multiplayer
+            elements.createRoomBtn.addEventListener('click', () => showPanel('createRoomPanel'));
+            elements.joinRoomBtn.addEventListener('click', () => showPanel('joinRoomPanel'));
+            elements.backFromMultiplayerBtn.addEventListener('click', () => showPanel('gameModePanel'));
             elements.startRoomBtn.addEventListener('click', createRoom);
-            elements.cancelCreateBtn.addEventListener('click', () => showPanel('gameModePanel'));
+            elements.cancelCreateBtn.addEventListener('click', () => showPanel('multiplayerOptionsPanel'));
             elements.joinRoomSubmitBtn.addEventListener('click', joinRoom);
-            elements.cancelJoinBtn.addEventListener('click', () => showPanel('gameModePanel'));
+            elements.cancelJoinBtn.addEventListener('click', () => showPanel('multiplayerOptionsPanel'));
             elements.copyRoomCodeBtn.addEventListener('click', copyRoomCode);
             elements.shareWhatsAppBtn.addEventListener('click', shareViaWhatsApp);
             elements.shareSMSBtn.addEventListener('click', shareViaSMS);
@@ -1038,7 +1056,7 @@
             }
             
             if (mode === 'multiplayer') {
-                showPanel('createRoomPanel');
+                showPanel('multiplayerOptionsPanel');
             } else {
                 startGame();
             }
@@ -1304,7 +1322,7 @@
                             answerDiv.className = 'answer-item';
                             
                             const answer = player.answers[category];
-                            const isValid = validateAnswer(answer, category);
+                            const isValid = answer && answer.charAt(0).toUpperCase() === gameState.currentLetter ? 'correct' : 'incorrect';
                             
                             answerDiv.textContent = `${category}: ${answer}`;
                             answerDiv.classList.add(isValid);
@@ -1419,7 +1437,7 @@
                 html += `
                     <tr>
                         <td>${category}</td>
-                        <td>${playerAnswer}</td>
+                        <td class="${playerAnswer !== '-' ? validateAnswer(playerAnswer, category) : ''}">${playerAnswer}</td>
                         ${gameState.gameMode === 'ai' ? 
                             `<td>${aiAnswer}</td>
                              <td>${points > 0 ? '+' + points : points}</td>` : 
@@ -1467,7 +1485,7 @@
                             answerDiv.className = 'answer-item';
                             
                             const answer = player.answers[category];
-                            const isValid = validateAnswer(answer, category);
+                            const isValid = answer && answer.charAt(0).toUpperCase() === gameState.currentLetter ? 'correct' : 'incorrect';
                             
                             answerDiv.textContent = `${category}: ${answer}`;
                             answerDiv.classList.add(isValid);
