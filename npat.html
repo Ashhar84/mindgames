@@ -446,6 +446,41 @@
             margin-right: 10px;
         }
         
+        /* Room List */
+        .room-list {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: var(--light);
+            border-radius: 8px;
+        }
+        
+        .room-list h3 {
+            margin-bottom: 10px;
+        }
+        
+        .room-list ul {
+            list-style-type: none;
+        }
+        
+        .room-list li {
+            padding: 10px;
+            margin-bottom: 5px;
+            background-color: white;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .room-info {
+            flex: 1;
+        }
+        
+        .room-players {
+            font-size: 0.8rem;
+            color: #666;
+        }
+        
         /* Responsive */
         @media (max-width: 768px) {
             h1 {
@@ -490,6 +525,9 @@
             </button>
             <button class="btn btn-purple" id="categoriesBtn">
                 Categories
+            </button>
+            <button class="btn btn-danger" id="mainMenuBtn">
+                Main Menu
             </button>
         </div>
         
@@ -604,6 +642,7 @@
             <div class="controls">
                 <button class="btn btn-success" id="createRoomBtn">Create New Room</button>
                 <button class="btn btn-accent" id="joinRoomBtn">Join Existing Room</button>
+                <button class="btn btn-primary" id="browseRoomsBtn">Browse Open Rooms</button>
                 <button class="btn btn-danger" id="backFromMultiplayerBtn">Back</button>
             </div>
         </div>
@@ -633,6 +672,18 @@
             <div class="controls">
                 <button class="btn btn-accent" id="joinRoomSubmitBtn">Join Room</button>
                 <button class="btn btn-danger" id="cancelJoinBtn">Back</button>
+            </div>
+        </div>
+        
+        <div class="panel" id="browseRoomsPanel">
+            <h2>Browse Open Rooms</h2>
+            <div class="room-list">
+                <h3>Available Rooms</h3>
+                <ul id="availableRoomsList"></ul>
+            </div>
+            <div class="controls">
+                <button class="btn btn-primary" id="refreshRoomsBtn">Refresh List</button>
+                <button class="btn btn-danger" id="backFromBrowseBtn">Back</button>
             </div>
         </div>
         
@@ -758,7 +809,8 @@
             roomRef: null,
             playersRef: null,
             gameRef: null,
-            chatRef: null
+            chatRef: null,
+            roomsRef: database.ref('rooms')
         };
 
         // DOM elements
@@ -768,6 +820,7 @@
             settingsBtn: document.getElementById('settingsBtn'),
             playModeBtn: document.getElementById('playModeBtn'),
             categoriesBtn: document.getElementById('categoriesBtn'),
+            mainMenuBtn: document.getElementById('mainMenuBtn'),
             
             // Panels
             howToPlayPanel: document.getElementById('howToPlayPanel'),
@@ -777,6 +830,7 @@
             multiplayerOptionsPanel: document.getElementById('multiplayerOptionsPanel'),
             createRoomPanel: document.getElementById('createRoomPanel'),
             joinRoomPanel: document.getElementById('joinRoomPanel'),
+            browseRoomsPanel: document.getElementById('browseRoomsPanel'),
             roomLobbyPanel: document.getElementById('roomLobbyPanel'),
             gameAreaPanel: document.getElementById('gameAreaPanel'),
             resultsPanel: document.getElementById('resultsPanel'),
@@ -818,6 +872,7 @@
             // Multiplayer options
             createRoomBtn: document.getElementById('createRoomBtn'),
             joinRoomBtn: document.getElementById('joinRoomBtn'),
+            browseRoomsBtn: document.getElementById('browseRoomsBtn'),
             backFromMultiplayerBtn: document.getElementById('backFromMultiplayerBtn'),
             
             // Room creation elements
@@ -830,6 +885,11 @@
             roomCodeInput: document.getElementById('roomCodeInput'),
             joinRoomSubmitBtn: document.getElementById('joinRoomSubmitBtn'),
             cancelJoinBtn: document.getElementById('cancelJoinBtn'),
+            
+            // Room browsing elements
+            availableRoomsList: document.getElementById('availableRoomsList'),
+            refreshRoomsBtn: document.getElementById('refreshRoomsBtn'),
+            backFromBrowseBtn: document.getElementById('backFromBrowseBtn'),
             
             // Lobby elements
             displayRoomCode: document.getElementById('displayRoomCode'),
@@ -876,6 +936,7 @@
             elements.settingsBtn.addEventListener('click', () => showPanel('settingsPanel'));
             elements.playModeBtn.addEventListener('click', showGameModeSelector);
             elements.categoriesBtn.addEventListener('click', showCategorySelector);
+            elements.mainMenuBtn.addEventListener('click', returnToMainMenu);
             
             // Game controls
             elements.submitAnswersBtn.addEventListener('click', submitAnswers);
@@ -904,6 +965,7 @@
             // Multiplayer
             elements.createRoomBtn.addEventListener('click', () => showPanel('createRoomPanel'));
             elements.joinRoomBtn.addEventListener('click', () => showPanel('joinRoomPanel'));
+            elements.browseRoomsBtn.addEventListener('click', browseRooms);
             elements.backFromMultiplayerBtn.addEventListener('click', () => showPanel('gameModePanel'));
             elements.startRoomBtn.addEventListener('click', createRoom);
             elements.cancelCreateBtn.addEventListener('click', () => showPanel('multiplayerOptionsPanel'));
@@ -914,6 +976,10 @@
             elements.shareSMSBtn.addEventListener('click', shareViaSMS);
             elements.readyBtn.addEventListener('click', toggleReady);
             elements.leaveRoomBtn.addEventListener('click', leaveRoom);
+            
+            // Room browsing
+            elements.refreshRoomsBtn.addEventListener('click', browseRooms);
+            elements.backFromBrowseBtn.addEventListener('click', () => showPanel('multiplayerOptionsPanel'));
             
             // Chat
             elements.sendMessageBtn.addEventListener('click', sendChatMessage);
@@ -940,6 +1006,11 @@
             panels.forEach(panel => {
                 panel.classList.remove('active-panel');
             });
+        }
+
+        // Return to main menu
+        function returnToMainMenu() {
+            hideAllPanels();
         }
 
         // Initialize AI knowledge base
@@ -1564,6 +1635,93 @@
             }
         }
 
+        // Browse available rooms
+        function browseRooms() {
+            showPanel('browseRoomsPanel');
+            updateAvailableRoomsList();
+        }
+
+        // Update list of available rooms
+        function updateAvailableRoomsList() {
+            elements.availableRoomsList.innerHTML = '';
+            
+            gameState.roomsRef.once('value').then(snapshot => {
+                const rooms = snapshot.val();
+                
+                if (!rooms) {
+                    elements.availableRoomsList.innerHTML = '<li>No rooms available. Create one!</li>';
+                    return;
+                }
+                
+                Object.keys(rooms).forEach(roomCode => {
+                    const room = rooms[roomCode];
+                    
+                    // Only show rooms that haven't started yet
+                    if (!room.game || !room.game.gameStarted) {
+                        const li = document.createElement('li');
+                        
+                        // Get player count
+                        const playerCount = room.players ? Object.keys(room.players).length : 0;
+                        
+                        li.innerHTML = `
+                            <div class="room-info">
+                                <strong>${roomCode}</strong>
+                                <div class="room-players">${playerCount} player${playerCount !== 1 ? 's' : ''}</div>
+                            </div>
+                            <button class="btn btn-accent join-room-btn" data-room="${roomCode}">Join</button>
+                        `;
+                        
+                        elements.availableRoomsList.appendChild(li);
+                    }
+                });
+                
+                // Add event listeners to join buttons
+                document.querySelectorAll('.join-room-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const roomCode = e.target.getAttribute('data-room');
+                        joinSpecificRoom(roomCode);
+                    });
+                });
+                
+                if (elements.availableRoomsList.children.length === 0) {
+                    elements.availableRoomsList.innerHTML = '<li>No rooms available. Create one!</li>';
+                }
+            });
+        }
+
+        // Join a specific room
+        function joinSpecificRoom(roomCode) {
+            gameState.isMultiplayer = true;
+            gameState.isHost = false;
+            gameState.roomCode = roomCode;
+            
+            // Set up room references
+            gameState.roomRef = database.ref('rooms/' + roomCode);
+            gameState.playersRef = gameState.roomRef.child('players');
+            gameState.gameRef = gameState.roomRef.child('game');
+            gameState.chatRef = gameState.roomRef.child('chat');
+            
+            // Get room settings
+            gameState.roomRef.once('value').then(snapshot => {
+                const roomData = snapshot.val();
+                if (!roomData) {
+                    alert('This room no longer exists');
+                    return;
+                }
+                
+                gameState.totalRounds = roomData.rounds || 5;
+                
+                // Add player to room
+                addPlayerToRoom();
+                
+                elements.displayRoomCode.textContent = roomCode;
+                showPanel('roomLobbyPanel');
+                
+                // Set up realtime listeners
+                setupRoomListeners();
+            });
+        }
+
         // Create a room
         function createRoom() {
             gameState.roomCode = Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -1623,42 +1781,7 @@
                 return;
             }
             
-            // Check if room exists
-            database.ref('rooms/' + roomCode).once('value').then(snapshot => {
-                if (!snapshot.exists()) {
-                    alert('Room not found. Please check the code and try again.');
-                    return;
-                }
-                
-                const roomData = snapshot.val();
-                if (!roomData.hostId) {
-                    alert('This room is no longer available');
-                    return;
-                }
-                
-                gameState.isMultiplayer = true;
-                gameState.isHost = false;
-                gameState.roomCode = roomCode;
-                gameState.totalRounds = roomData.rounds || 5;
-                
-                // Set up room references
-                gameState.roomRef = database.ref('rooms/' + roomCode);
-                gameState.playersRef = gameState.roomRef.child('players');
-                gameState.gameRef = gameState.roomRef.child('game');
-                gameState.chatRef = gameState.roomRef.child('chat');
-                
-                // Add player to room
-                addPlayerToRoom();
-                
-                elements.displayRoomCode.textContent = roomCode;
-                showPanel('roomLobbyPanel');
-                
-                // Set up realtime listeners
-                setupRoomListeners();
-            }).catch(error => {
-                console.error('Error joining room:', error);
-                alert('Failed to join room. Please try again.');
-            });
+            joinSpecificRoom(roomCode);
         }
 
         // Set up room listeners
