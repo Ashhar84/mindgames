@@ -168,6 +168,11 @@
             color: #856404;
         }
         
+        .misspelled {
+            background-color: #ffe8d6;
+            color: #6b4d21;
+        }
+        
         /* Buttons */
         .btn {
             padding: 12px 24px;
@@ -546,6 +551,10 @@
                 <label for="duplicatePenalty">Points deduction for duplicates:</label>
                 <input type="number" id="duplicatePenalty" min="0" max="10" value="2">
             </div>
+            <div class="setting-option">
+                <label for="spellingPenalty">Points deduction for misspellings:</label>
+                <input type="number" id="spellingPenalty" min="0" max="10" value="1">
+            </div>
             <div class="controls">
                 <button class="btn btn-primary" id="saveSettingsBtn">Save Settings</button>
                 <button class="btn btn-danger" id="backFromSettingsBtn">Back</button>
@@ -799,6 +808,7 @@
             roomCode: '',
             players: {},
             duplicatePenalty: 2,
+            spellingPenalty: 1,
             playerName: sessionStorage.getItem('playerName') || '',
             playerId: sessionStorage.getItem('playerId') || Math.random().toString(36).substring(7),
             selectedCategories: ['Name', 'Place', 'Animal', 'Thing'],
@@ -853,6 +863,7 @@
             timeLimit: document.getElementById('timeLimit'),
             rounds: document.getElementById('rounds'),
             duplicatePenalty: document.getElementById('duplicatePenalty'),
+            spellingPenalty: document.getElementById('spellingPenalty'),
             saveSettingsBtn: document.getElementById('saveSettingsBtn'),
             backFromSettingsBtn: document.getElementById('backFromSettingsBtn'),
             closeHowToBtn: document.getElementById('closeHowToBtn'),
@@ -1010,41 +1021,211 @@
 
         // Return to main menu
         function returnToMainMenu() {
-            hideAllPanels();
+            if (gameState.isPlaying && !confirm('Are you sure you want to return to the main menu? Your current game progress will be lost.')) {
+                return;
+            }
+            
+            // If in multiplayer mode, leave the room first
+            if (gameState.isMultiplayer) {
+                leaveRoom();
+            }
+            
+            // Redirect to index.html
+            window.location.href = 'index.html';
         }
 
-        // Initialize AI knowledge base
+        // Initialize AI knowledge base with extensive knowledge
         function initAI() {
             gameState.aiKnowledge = {
                 easy: JSON.parse(localStorage.getItem('aiKnowledgeEasy')) || {
-                    'Name': ['Alice', 'Bob', 'Charlie', 'David', 'Eve'],
-                    'Place': ['Austin', 'Boston', 'Chicago', 'Denver', 'Egypt'],
-                    'Animal': ['Ant', 'Bear', 'Cat', 'Dog', 'Elephant'],
-                    'Thing': ['Apple', 'Ball', 'Chair', 'Door', 'Egg'],
-                    'Food': ['Apple', 'Banana', 'Carrot', 'Donut', 'Eggplant'],
-                    'Country': ['Argentina', 'Brazil', 'Canada', 'Denmark', 'Ecuador'],
-                    'Cartoon': ['Arthur', 'Bugs', 'Courage', 'Dexter', 'Ed'],
-                    'Movie': ['Avatar', 'Batman', 'Casino', 'Dune', 'E.T.']
+                    'Name': ['Ali', 'Ayesha', 'Bilal', 'Fatima', 'Hassan', 'Hina', 'Imran', 'Khadija', 'Mohammad', 'Nadia', 
+                             'Omar', 'Qasim', 'Rahman', 'Sadia', 'Tariq', 'Usman', 'Yasmin', 'Zainab', 'Abdullah', 'Amina',
+                             'Ahmed', 'Aisha', 'Ibrahim', 'Maryam', 'Mustafa', 'Zahra', 'Adam', 'Eve', 'John', 'Sarah',
+                             'Michael', 'David', 'James', 'Robert', 'Maria', 'Anna', 'Mohammed', 'Wei', 'Li', 'Zhang',
+                             'Yusuf', 'Fatima', 'Ahmad', 'Yasin', 'Karim', 'Noor', 'Samir', 'Leila', 'Yousef', 'Mariam'],
+                    'Place': ['Abbottabad', 'Bahawalpur', 'Chitral', 'Dera Ghazi Khan', 'Faisalabad', 'Gujranwala', 'Hyderabad', 
+                              'Islamabad', 'Jacobabad', 'Karachi', 'Lahore', 'Multan', 'Nawabshah', 'Okara', 'Peshawar', 
+                              'Quetta', 'Rawalpindi', 'Sialkot', 'Taxila', 'Umerkot', 'Vehari', 'Wazirabad', 'Yazman', 
+                              'Ziarat', 'Agra', 'Bangalore', 'Chennai', 'Delhi', 'Goa', 'Hyderabad', 'Jaipur', 'Kolkata',
+                              'Ludhiana', 'Mumbai', 'Nagpur', 'Ooty', 'Pune', 'Qutub Minar', 'Rishikesh', 'Srinagar',
+                              'Taj Mahal', 'Udaipur', 'Varanasi', 'Wayanad', 'Xavier College', 'Yamuna Nagar', 'Ziro',
+                              'Amsterdam', 'Berlin', 'Cairo', 'Dubai', 'Edinburgh', 'Florence', 'Geneva', 'Hanoi',
+                              'Istanbul', 'Jakarta', 'Kyoto', 'Lisbon', 'Madrid', 'Naples', 'Oslo', 'Paris', 'Quebec',
+                              'Rome', 'Seoul', 'Tokyo', 'Venice', 'Warsaw', 'Xian', 'York', 'Zurich'],
+                    'Animal': ['Aardvark', 'Baboon', 'Cheetah', 'Dolphin', 'Elephant', 'Flamingo', 'Giraffe', 'Hippopotamus', 
+                              'Iguana', 'Jaguar', 'Koala', 'Lion', 'Monkey', 'Narwhal', 'Ostrich', 'Penguin', 'Quokka', 
+                              'Rhinoceros', 'Sloth', 'Tiger', 'Urial', 'Vulture', 'Walrus', 'Xerus', 'Yak', 'Zebra',
+                              'Ant', 'Bear', 'Cat', 'Dog', 'Eagle', 'Fox', 'Goat', 'Horse', 'Impala', 'Jellyfish',
+                              'Kangaroo', 'Lemur', 'Mongoose', 'Newt', 'Ocelot', 'Panther', 'Quail', 'Rabbit', 'Shark',
+                              'Turtle', 'Umbrellabird', 'Viper', 'Wolf', 'X-ray fish', 'Yabby', 'Zebu'],
+                    'Thing': ['Apple', 'Ball', 'Chair', 'Door', 'Egg', 'Fan', 'Glass', 'Hat', 'Iron', 'Jug', 'Kite', 
+                              'Lamp', 'Mirror', 'Needle', 'Orange', 'Pen', 'Quilt', 'Radio', 'Shoe', 'Table', 'Umbrella', 
+                              'Vase', 'Watch', 'Xylophone', 'Yoyo', 'Zipper', 'Album', 'Book', 'Clock', 'Desk', 'Eraser',
+                              'Fork', 'Glove', 'Hammer', 'Ink', 'Jacket', 'Knife', 'Ladder', 'Mug', 'Notebook', 'Oven',
+                              'Pillow', 'Quill', 'Ruler', 'Spoon', 'Telephone', 'Uniform', 'Violin', 'Water bottle',
+                              'X-ray', 'Yarn', 'Zucchini'],
+                    'Food': ['Apple', 'Banana', 'Chapati', 'Dal', 'Egg', 'Falafel', 'Grapes', 'Halwa', 'Ice cream', 'Juice', 
+                             'Kebab', 'Lassi', 'Mango', 'Noodles', 'Orange', 'Pizza', 'Quesadilla', 'Rice', 'Samosa', 'Tikka', 
+                             'Udon', 'Vada', 'Waffle', 'Xacuti', 'Yogurt', 'Zucchini', 'Aloo gobi', 'Biryani', 'Curry', 'Dosa',
+                             'Enchilada', 'Fajita', 'Gulab jamun', 'Hamburger', 'Idli', 'Jalebi', 'Korma', 'Lentils', 'Momo',
+                             'Naan', 'Omelette', 'Pasta', 'Quiche', 'Raita', 'Soup', 'Taco', 'Urad dal', 'Vindaloo', 'Wrap',
+                             'Xoi', 'Yaki soba', 'Ziti'],
+                    'Country': ['Afghanistan', 'Bangladesh', 'Canada', 'Denmark', 'Egypt', 'France', 'Germany', 'Hungary', 
+                               'India', 'Japan', 'Kenya', 'Lebanon', 'Mexico', 'Nepal', 'Oman', 'Pakistan', 'Qatar', 
+                               'Russia', 'Spain', 'Turkey', 'USA', 'Vietnam', 'Wales', 'Xinjiang', 'Yemen', 'Zimbabwe',
+                               'Albania', 'Brazil', 'China', 'Dominica', 'Ecuador', 'Finland', 'Greece', 'Honduras',
+                               'Indonesia', 'Jamaica', 'Kazakhstan', 'Laos', 'Maldives', 'Norway', 'Philippines', 'Romania',
+                               'Singapore', 'Thailand', 'Uganda', 'Venezuela', 'Western Sahara', 'Xinjiang', 'Yugoslavia',
+                               'Zambia'],
+                    'Cartoon': ['Aladdin', 'Bambi', 'Cinderella', 'Dumbo', 'Elsa', 'Frozen', 'Garfield', 'He-Man', 'Ice Age', 
+                                'Jungle Book', 'Kung Fu Panda', 'Lion King', 'Mickey Mouse', 'Nemo', 'Olaf', 'Pocahontas', 
+                                'Quasimodo', 'Ratatouille', 'Shrek', 'Tarzan', 'Up', 'VeggieTales', 'Winnie the Pooh', 
+                                'X-Men', 'Yogi Bear', 'Zootopia', 'Alvin', 'Bugs Bunny', 'Casper', 'Donald Duck', 'Elmer Fudd',
+                                'Felix the Cat', 'Goofy', 'Homer Simpson', 'Inspector Gadget', 'Johnny Bravo', 'Kim Possible',
+                                'Looney Tunes', 'Mighty Mouse', 'Ninja Turtles', 'Oswald', 'Popeye', 'Quick Draw McGraw',
+                                'Road Runner', 'Scooby-Doo', 'Tom and Jerry', 'Underdog', 'Voltron', 'Woody Woodpecker',
+                                'Xiaolin Showdown', 'Yakky Doodle', 'Ziggy'],
+                    'Movie': ['Avatar', 'Batman', 'Casablanca', 'Dangal', 'E.T.', 'Frozen', 'Gladiator', 'Harry Potter', 
+                              'Inception', 'Jaws', 'Kabhi Khushi Kabhie Gham', 'Lion King', 'Matrix', 'Narnia', 'Oceans Eleven', 
+                              'Pirates of the Caribbean', 'Quantum of Solace', 'Rang De Basanti', 'Sholay', 'Titanic', 
+                              'Up', 'V for Vendetta', 'Wizard of Oz', 'X-Men', 'You Only Live Twice', 'Zindagi Na Milegi Dobara',
+                              'Airlift', 'Baahubali', 'Chennai Express', 'Dilwale Dulhania Le Jayenge', 'English Vinglish',
+                              'Fanaa', 'Gangs of Wasseypur', 'Hum Aapke Hain Koun', 'Iqbal', 'Jab We Met', 'Kabir Singh',
+                              'Lagaan', 'Mughal-e-Azam', 'Namastey London', 'Om Shanti Om', 'Piku', 'Queen', 'Raees',
+                              'Sultan', 'Taare Zameen Par', 'Uri', 'Veer-Zaara', 'Wake Up Sid', 'Yeh Jawaani Hai Deewani',
+                              'Zubeidaa']
                 },
                 medium: JSON.parse(localStorage.getItem('aiKnowledgeMedium')) || {
-                    'Name': ['Amelia', 'Benjamin', 'Charlotte', 'Daniel', 'Elizabeth'],
-                    'Place': ['Amsterdam', 'Barcelona', 'Canberra', 'Dublin', 'Edinburgh'],
-                    'Animal': ['Alligator', 'Butterfly', 'Cheetah', 'Dolphin', 'Eagle'],
-                    'Thing': ['Airplane', 'Bicycle', 'Computer', 'Diamond', 'Eraser'],
-                    'Food': ['Avocado', 'Burrito', 'Cupcake', 'Dumpling', 'Escargot'],
-                    'Country': ['Australia', 'Belgium', 'Colombia', 'Dominica', 'Estonia'],
-                    'Cartoon': ['Animaniacs', 'Bojack', 'Chipmunks', 'Daria', 'Elmo'],
-                    'Movie': ['Amadeus', 'Braveheart', 'Chinatown', 'Dracula', 'Elf']
+                    'Name': ['Aarav', 'Bhavya', 'Chaitanya', 'Divya', 'Eesha', 'Farhan', 'Gautam', 'Hridaan', 'Ishaan', 'Jiya', 
+                             'Kavya', 'Laksh', 'Mihir', 'Navya', 'Omkar', 'Prisha', 'Qasim', 'Reyansh', 'Saanvi', 'Tanish', 
+                             'Urvi', 'Vivaan', 'Waheeda', 'Xander', 'Yash', 'Zara', 'Aarush', 'Bhoomi', 'Chirag', 'Darsh',
+                             'Eva', 'Faiyaz', 'Gia', 'Harsh', 'Ira', 'Jai', 'Kiara', 'Lavanya', 'Myra', 'Neel',
+                             'Ojas', 'Pari', 'Quincy', 'Riya', 'Shiv', 'Tara', 'Uday', 'Ved', 'Waseem', 'Xena',
+                             'Yuvan', 'Zoya'],
+                    'Place': ['Andaman', 'Bandra', 'Chandigarh', 'Dehradun', 'Ellora', 'Fatehpur Sikri', 'Gangtok', 'Hampi', 
+                              'Indore', 'Jodhpur', 'Kanyakumari', 'Leh', 'Manali', 'Nainital', 'Ooty', 'Pondicherry', 'Qutub Minar', 
+                              'Rishikesh', 'Shimla', 'Tirupati', 'Udaipur', 'Varkala', 'Wayanad', 'Xavier College', 'Yercaud', 
+                              'Ziro', 'Agra Fort', 'Badami', 'Charminar', 'Diu', 'Elephanta Caves', 'Feroz Shah Kotla', 'Golconda',
+                              'Hawa Mahal', 'India Gate', 'Jaisalmer Fort', 'Konark Sun Temple', 'Lotus Temple', 'Mehrangarh Fort',
+                              'Nalanda', 'Orchha', 'Purana Qila', 'Qila Rai Pithora', 'Red Fort', 'Sanchi Stupa', 'Taj Mahal',
+                              'Umaid Bhawan Palace', 'Victoria Memorial', 'Warangal Fort', 'Xuanzang Memorial', 'Yamuna River',
+                              'Zanskar Valley'],
+                    'Animal': ['Aardwolf', 'Binturong', 'Capybara', 'Dugong', 'Echidna', 'Fossa', 'Gerenuk', 'Hoatzin', 'Indri', 
+                               'Jerboa', 'Kakapo', 'Loris', 'Markhor', 'Numbat', 'Okapi', 'Pangolin', 'Quokka', 'Ratel', 'Saiga', 
+                               'Tarsier', 'Uakari', 'Vicuña', 'Wombat', 'Xenopus', 'Yellow-eyed penguin', 'Zorilla', 'Alpaca',
+                               'Bongo', 'Caracal', 'Dhole', 'Emu', 'Fennec fox', 'Gaur', 'Himalayan tahr', 'Ibex', 'Jackal',
+                               'Kinkajou', 'Lynx', 'Marmoset', 'Narwhal', 'Oryx', 'Pademelon', 'Quoll', 'Rock hyrax', 'Serval',
+                               'Tamarin', 'Urial', 'Vole', 'Wallaby', 'Xerus', 'Yak', 'Zebu'],
+                    'Thing': ['Accordion', 'Binoculars', 'Chandelier', 'Didgeridoo', 'Espresso machine', 'Fountain pen', 'Gramophone', 
+                              'Harmonica', 'Incubator', 'Jukebox', 'Kaleidoscope', 'Loom', 'Metronome', 'Nebulizer', 'Odometer', 
+                              'Periscope', 'Quadcopter', 'Retort stand', 'Sextant', 'Theodolite', 'Ultrasound machine', 'Voltmeter', 
+                              'Windmill', 'Xylophone', 'Yacht', 'Zester', 'Anemometer', 'Barometer', 'Centrifuge', 'Dynamo',
+                              'Electroscope', 'Fiberscope', 'Gyroscope', 'Hydrometer', 'Inclinometer', 'Jacuzzi', 'Kiln', 'Lighter',
+                              'Microscope', 'Nail gun', 'Oscilloscope', 'Pyrometer', 'Quadrant', 'Refractometer', 'Spectrometer',
+                              'Thermometer', 'Ultrasonicator', 'Viscometer', 'Water clock', 'X-ray machine', 'Yoke', 'Zipper'],
+                    'Food': ['Achari', 'Biryani', 'Chaat', 'Dhokla', 'Eclairs', 'Falooda', 'Gajar ka halwa', 'Haleem', 'Idli', 
+                             'Jalebi', 'Kheer', 'Ladoo', 'Mithai', 'Nihari', 'Obbattu', 'Pani puri', 'Qorma', 'Rasgulla', 'Samosa', 
+                             'Tandoori', 'Upma', 'Vada pav', 'Watalappam', 'Xacuti', 'Yakhni', 'Zarda', 'Aloo tikki', 'Baingan bharta',
+                             'Chana masala', 'Dahi vada', 'Egg curry', 'Fish curry', 'Gulab jamun', 'Hyderabadi biryani', 'Imarti',
+                             'Jalfrezi', 'Kofta', 'Litti chokha', 'Malai kofta', 'Nargisi kofta', 'Onion bhaji', 'Pav bhaji',
+                             'Quinoa salad', 'Rajma chawal', 'Sarson ka saag', 'Tandoori chicken', 'Uttapam', 'Vindaloo',
+                             'White sauce pasta', 'Xiaolongbao', 'Yam khai dao', 'Zucchini bread'],
+                    'Country': ['Algeria', 'Brunei', 'Comoros', 'Djibouti', 'Eswatini', 'Fiji', 'Gabon', 'Haiti', 'Iceland', 
+                                'Jordan', 'Kiribati', 'Liechtenstein', 'Monaco', 'Nauru', 'Oman', 'Palau', 'Qatar', 'Rwanda', 
+                                'Suriname', 'Tonga', 'Uruguay', 'Vanuatu', 'Wallis and Futuna', 'Xinjiang', 'Yugoslavia', 'Zambia',
+                                'Andorra', 'Belize', 'Cyprus', 'Dominica', 'Eritrea', 'Faroe Islands', 'Gambia', 'Holy See',
+                                'Isle of Man', 'Jersey', 'Kosovo', 'Lesotho', 'Marshall Islands', 'North Korea', 'Oman',
+                                'Paraguay', 'Réunion', 'Saint Lucia', 'Timor-Leste', 'Uzbekistan', 'Vatican City', 'Western Sahara',
+                                'Yap', 'Zanzibar'],
+                    'Cartoon': ['Adventure Time', 'Ben 10', 'Courage the Cowardly Dog', 'Dexter\'s Laboratory', 'Ed, Edd n Eddy', 
+                                'Foster\'s Home', 'Gravity Falls', 'Hey Arnold!', 'Invader Zim', 'Johnny Bravo', 'Kim Possible', 
+                                'Looney Tunes', 'Mighty Mouse', 'Ninja Hattori', 'Oswald', 'Phineas and Ferb', 'Quack Pack', 
+                                'Rugrats', 'Scooby-Doo', 'Teen Titans', 'Ultraman', 'Voltron', 'What\'s New Scooby-Doo?', 
+                                'Xiaolin Showdown', 'Yogi Bear', 'Zig & Sharko', 'Arthur', 'Bakugan', 'Cyberchase', 'Doraemon',
+                                'El Tigre', 'Fairly OddParents', 'Gumby', 'Horrid Henry', 'Inspector Gadget', 'Jakers!',
+                                'Krypto the Superdog', 'Little Einsteins', 'Mona the Vampire', 'Noddy', 'Oggy and the Cockroaches',
+                                'Pinky and the Brain', 'Quack Pack', 'Richie Rich', 'Sonic X', 'The Amazing World of Gumball',
+                                'Ultimate Spider-Man', 'VeggieTales', 'Wild Kratts', 'Xiaolin Chronicles', 'Yin Yang Yo!',
+                                'Zoboomafoo'],
+                    'Movie': ['Andaz Apna Apna', 'Baahubali', 'Chak De! India', 'Dil Chahta Hai', 'English Vinglish', 'Fanaa', 
+                              'Gangs of Wasseypur', 'Hera Pheri', 'Iqbal', 'Jab We Met', 'Kabhi Khushi Kabhie Gham', 'Lagaan', 
+                              'Mughal-e-Azam', 'Namastey London', 'Om Shanti Om', 'Piku', 'Queen', 'Rang De Basanti', 'Sholay', 
+                              'Taare Zameen Par', 'Udaan', 'Vicky Donor', 'Wake Up Sid', 'X: Past Is Present', 'Yeh Jawaani Hai Deewani', 
+                              'Zindagi Na Milegi Dobara', 'A Wednesday', 'Barfi!', 'Chennai Express', 'Dangal', 'Ek Tha Tiger',
+                              'Fukrey', 'Golmaal', 'Hum Aapke Hain Koun..!', 'I', 'Jodhaa Akbar', 'Kahaani', 'Lage Raho Munna Bhai',
+                              'Masaan', 'Neerja', 'October', 'Paan Singh Tomar', 'Queen', 'Raazi', 'Sultan', 'Tanu Weds Manu',
+                              'Udta Punjab', 'Vicky Donor', 'Wazir', 'Yamla Pagla Deewana', 'Zubeidaa']
                 },
                 hard: JSON.parse(localStorage.getItem('aiKnowledgeHard')) || {
-                    'Name': ['Anastasia', 'Bartholomew', 'Cornelius', 'Demetrius', 'Evangeline'],
-                    'Place': ['Antarctica', 'Bora Bora', 'Casablanca', 'Dominica', 'Ecuador'],
-                    'Animal': ['Aardvark', 'Binturong', 'Chinchilla', 'Dugong', 'Emu'],
-                    'Thing': ['Accordion', 'Binoculars', 'Chandelier', 'Didgeridoo', 'Espresso Machine'],
-                    'Food': ['Arugula', 'Bruschetta', 'Ceviche', 'Dulce de Leche', 'Endive'],
-                    'Country': ['Azerbaijan', 'Botswana', 'Comoros', 'Djibouti', 'Eswatini'],
-                    'Cartoon': ['Aqua Teen', 'Biker Mice', 'Cow & Chicken', 'Duckman', 'Exosquad'],
-                    'Movie': ['Amélie', 'Barry Lyndon', 'Crouching Tiger', 'Dogville', 'Eyes Wide Shut']
+                    'Name': ['Aadvik', 'Bhadra', 'Chandrakant', 'Dakshayani', 'Eknath', 'Falak', 'Gauransh', 'Hrishikesh', 
+                              'Ishwari', 'Jagannath', 'Kaivalya', 'Lakshmipati', 'Madhukar', 'Nakshatra', 'Omkara', 'Pragyaparamita', 
+                              'Quasar', 'Rudraksh', 'Sarvajna', 'Tattvamasi', 'Ujjwala', 'Vasundhara', 'Wamika', 'Xenon', 'Yajnadatta', 
+                              'Zarathustra', 'Abhinavagupta', 'Bharatvarsha', 'Chandragupta', 'Dharmaraja', 'Ekalavya', 'Falaknuma',
+                              'Gautamiputra', 'Harishchandra', 'Indivar', 'Janamejaya', 'Kalidasa', 'Lokmanya', 'Mahavira',
+                              'Narayanapandit', 'Oormila', 'Parshuram', 'Qutubuddin', 'Rajendra', 'Satyavati', 'Tukaram',
+                              'Udayaditya', 'Vidyadhara', 'Waman', 'Xerxes', 'Yashodhara', 'Zarifa'],
+                    'Place': ['Aihole', 'Badrinath', 'Champaner', 'Dholavira', 'Ellora Caves', 'Fatehpur Sikri', 'Golkonda', 
+                              'Hampi', 'Indraprastha', 'Jageshwar', 'Kanheri Caves', 'Lothal', 'Mahabalipuram', 'Nalanda', 
+                              'Orchha', 'Pattadakal', 'Qila Rai Pithora', 'Rani ki Vav', 'Sanchi', 'Talakadu', 'Udayagiri Caves', 
+                              'Vijayanagara', 'Wayanad Wildlife Sanctuary', 'Xuanzang Memorial', 'Yana Caves', 'Zanskar Valley',
+                              'Amarkantak', 'Bhitarkanika', 'Chandubi Lake', 'Dzukou Valley', 'Eravikulam National Park',
+                              'Fambong Lho Wildlife Sanctuary', 'Gangotri Glacier', 'Hemis National Park', 'Idukki Wildlife Sanctuary',
+                              'Jaldapara National Park', 'Kaziranga National Park', 'Loktak Lake', 'Mudumalai National Park',
+                              'Nameri National Park', 'Orang National Park', 'Pangong Tso', 'Qutub Minar Complex', 'Ranthambore National Park',
+                              'Sundarbans National Park', 'Tawang Monastery', 'Udhagamandalam', 'Valley of Flowers', 'Wild Ass Sanctuary',
+                              'Xuanzang Memorial Hall', 'Yumthang Valley', 'Ziro Valley'],
+                    'Animal': ['Aardwolf', 'Binturong', 'Capybara', 'Dugong', 'Echidna', 'Fossa', 'Gerenuk', 'Hoatzin', 'Indri', 
+                               'Jerboa', 'Kakapo', 'Loris', 'Markhor', 'Numbat', 'Okapi', 'Pangolin', 'Quokka', 'Ratel', 'Saiga', 
+                               'Tarsier', 'Uakari', 'Vicuña', 'Wombat', 'Xenopus', 'Yellow-eyed penguin', 'Zorilla', 'Aardvark',
+                               'Babirusa', 'Coelacanth', 'Dhole', 'Ermine', 'Fanaloka', 'Gelada', 'Hamadryas', 'Ibex', 'Jentink\'s duiker',
+                               'Kakapo', 'Linsang', 'Muntjac', 'Nyala', 'Olinguito', 'Pademelon', 'Quokka', 'Rock hyrax', 'Saola',
+                               'Takin', 'Urial', 'Visayan warty pig', 'Walrus', 'Xerus', 'Yak', 'Zebra duiker'],
+                    'Thing': ['Accelerometer', 'Bathyscaphe', 'Chromatograph', 'Densitometer', 'Electrophoresis apparatus', 
+                              'Fluorometer', 'Galvanometer', 'Hydrometer', 'Interferometer', 'Joule balance', 'Kymograph', 
+                              'Lactometer', 'Manometer', 'Nephelometer', 'Odometer', 'Pyrheliometer', 'Quadrant electrometer', 
+                              'Refractometer', 'Spectrophotometer', 'Thermocouple', 'Ultrasonicator', 'Viscometer', 'Wheatstone bridge', 
+                              'X-ray diffractometer', 'Young\'s apparatus', 'Zamboni pile', 'Anemograph', 'Barocyclonometer',
+                              'Cryostat', 'Drosograph', 'Electrodynamometer', 'Fathometer', 'Gyrocompass', 'Heliograph',
+                              'Inclinometer', 'Jolly balance', 'Kundt\'s tube', 'Lysimeter', 'Magnetometer', 'Nepheloscope',
+                              'Oscillograph', 'Pyrgeometer', 'Quadrant electrometer', 'Respirometer', 'Stroboscope', 'Tensiometer',
+                              'Udometer', 'Vibroscope', 'Wollaston prism', 'Xenon arc lamp', 'Yaw meter', 'Zymometer'],
+                    'Food': ['Aamras puri', 'Bharwan karela', 'Chak-hao kheer', 'Dum ka murgh', 'Elaneer payasam', 'Firni', 
+                             'Gavvalu', 'Haleem', 'Idiyappam', 'Jigarthanda', 'Kozhukattai', 'Litti chokha', 'Misi roti', 
+                             'Nihari', 'Obbattu', 'Pootharekulu', 'Qubani ka meetha', 'Ras malai', 'Sanna', 'Thukpa', 
+                             'Undrallu', 'Vazhaipoo vadai', 'Watalappam', 'Xacuti', 'Yakhni pulao', 'Zafrani pulao',
+                             'Aappam', 'Bebinca', 'Chhena poda', 'Doodhpak', 'Enduri pitha', 'Fara', 'Ghevar',
+                             'Handvo', 'Injipuli', 'Jalebi', 'Khar', 'Lai', 'Macher jhol', 'Narkel naru',
+                             'Odia khaja', 'Pakhala', 'Qubani', 'Rasabali', 'Sattu paratha', 'Thekua',
+                             'Uttapam', 'Vada', 'Wheat halwa', 'Xoi', 'Yakhni', 'Zarda'],
+                    'Country': ['Antigua and Barbuda', 'Bosnia and Herzegovina', 'Central African Republic', 'Democratic Republic of the Congo', 
+                                'Equatorial Guinea', 'Federated States of Micronesia', 'Guinea-Bissau', 'Holy See (Vatican City State)', 
+                                'Independent State of Samoa', 'Kyrgyz Republic', 'Lao People\'s Democratic Republic', 'Marshall Islands', 
+                                'North Macedonia', 'Oriental Republic of Uruguay', 'Plurinational State of Bolivia', 'Republic of Cabo Verde', 
+                                'Saint Vincent and the Grenadines', 'Syrian Arab Republic', 'Trinidad and Tobago', 'United Arab Emirates', 
+                                'Virgin Islands (U.S.)', 'Wallis and Futuna Islands', 'Xinjiang Uyghur Autonomous Region', 'Yemen Arab Republic', 
+                                'Zanzibar Archipelago', 'Antarctica', 'Bouvet Island', 'Christmas Island', 'Democratic People\'s Republic of Korea',
+                                'French Southern Territories', 'Heard Island and McDonald Islands', 'Isle of Man', 'Jan Mayen',
+                                'Kerguelen Islands', 'Macao Special Administrative Region of China', 'Norfolk Island', 'Pitcairn Islands',
+                                'Republic of South Sudan', 'Svalbard and Jan Mayen', 'Turks and Caicos Islands', 'United States Minor Outlying Islands',
+                                'Virgin Islands, British', 'Wake Island', 'Yap Islands', 'Zanzibar and Pemba'],
+                    'Cartoon': ['Adventures of the Gummi Bears', 'Bonkers', 'Chip \'n Dale: Rescue Rangers', 'Darkwing Duck', 'Earthworm Jim', 
+                                 'Freakazoid!', 'Gargoyles', 'Histeria!', 'Invasion America', 'Jumanji', 'Krypto the Superdog', 'Little Dracula', 
+                                 'Mighty Ducks: The Animated Series', 'Ned\'s Newt', 'Oggy and the Cockroaches', 'Pinky and the Brain', 
+                                 'Quack Pack', 'Road Rovers', 'Santo Bugito', 'The Tick', 'Ultraforce', 'Viper', 'Wild C.A.T.s', 
+                                 'X-Men: Evolution', 'Yin Yang Yo!', 'Zorro: The Animated Series', 'Aaahh!!! Real Monsters', 'Biker Mice from Mars',
+                                 'Captain Planet and the Planeteers', 'Dino-Riders', 'Exosquad', 'Fantastic Max', 'G.I. Joe: A Real American Hero',
+                                 'Hurricanes', 'Inhumanoids', 'Jayce and the Wheeled Warriors', 'Kidd Video', 'Lazer Tag Academy',
+                                 'M.A.S.K.', 'NASCAR Racers', 'Ovide and the Gang', 'Pac-Man', 'Q-Force', 'Richie Rich', 'Spartakus and the Sun Beneath the Sea',
+                                 'The Centurions', 'Ulysses 31', 'Visionaries: Knights of the Magical Light', 'Widget the World Watcher',
+                                 'Xyber 9: New Dawn', 'Yvon of the Yukon', 'Zazoo U'],
+                    'Movie': ['Aparajito', 'Bharat Ek Khoj', 'Charulata', 'Do Bigha Zamin', 'Elippathayam', 'Fandry', 'Garam Hawa', 
+                              'Hirok Rajar Deshe', 'Iruvar', 'Jana Aranya', 'Kaagaz Ke Phool', 'Lage Raho Munna Bhai', 'Meghe Dhaka Tara', 
+                              'Nayakan', 'Ondanondu Kaladalli', 'Pather Panchali', 'Qissa', 'Raja Harishchandra', 'Salaam Bombay!', 
+                              'Titash Ekti Nadir Naam', 'Uski Roti', 'Ventilator', 'Woh Chokri', 'X: Past Is Present', 'Yeh Ballet', 
+                              'Zindagi In Short', 'Aakrosh', 'Bhavni Bhavai', 'Chokher Bali', 'Duvidha', 'Ek Doctor Ki Maut', 'Firaaq',
+                              'Gandu', 'Hazaaron Khwaishein Aisi', 'Ijaazat', 'Jaane Bhi Do Yaaro', 'Khandhar', 'Lajja', 'Manthan',
+                              'Nishant', 'Om Dar-B-Dar', 'Parzania', 'Qarib Qarib Singlle', 'Rudaali', 'Sardari Begum', 'Tamas',
+                              'Udaan', 'Vijeta', 'Water', 'Xalxo', 'Yeh Saali Zindagi', 'Zubeidaa']
                 }
             };
         }
@@ -1105,6 +1286,75 @@
             });
         }
 
+        // Check spelling and suggest corrections
+        function checkSpelling(word, category) {
+            if (!word) return { correct: true };
+            
+            const knowledge = gameState.aiKnowledge[gameState.aiDifficulty][category] || [];
+            const lowerWord = word.toLowerCase();
+            
+            // Exact match
+            if (knowledge.some(a => a.toLowerCase() === lowerWord)) {
+                return { correct: true };
+            }
+            
+            // Find closest match
+            let closestMatch = null;
+            let minDistance = Infinity;
+            
+            knowledge.forEach(correctWord => {
+                if (correctWord.charAt(0).toUpperCase() === word.charAt(0).toUpperCase()) {
+                    const distance = levenshteinDistance(lowerWord, correctWord.toLowerCase());
+                    if (distance < minDistance && distance <= 2) { // Allow small typos
+                        minDistance = distance;
+                        closestMatch = correctWord;
+                    }
+                }
+            });
+            
+            if (closestMatch) {
+                return { 
+                    correct: false, 
+                    suggestion: closestMatch,
+                    distance: minDistance
+                };
+            }
+            
+            return { correct: true }; // Assume correct if no match found
+        }
+        
+        // Levenshtein distance algorithm for spelling suggestions
+        function levenshteinDistance(a, b) {
+            if (a.length === 0) return b.length;
+            if (b.length === 0) return a.length;
+            
+            const matrix = [];
+            
+            for (let i = 0; i <= b.length; i++) {
+                matrix[i] = [i];
+            }
+            
+            for (let j = 0; j <= a.length; j++) {
+                matrix[0][j] = j;
+            }
+            
+            for (let i = 1; i <= b.length; i++) {
+                for (let j = 1; j <= a.length; j++) {
+                    if (b.charAt(i-1) === a.charAt(j-1)) {
+                        matrix[i][j] = matrix[i-1][j-1];
+                    } else {
+                        matrix[i][j] = Math.min(
+                            matrix[i-1][j-1] + 1, // substitution
+                            matrix[i][j-1] + 1,   // insertion
+                            matrix[i-1][j] + 1    // deletion
+                        );
+                    }
+                }
+            }
+            
+            return matrix[b.length][a.length];
+        }
+
         // Show game mode selector
         function showGameModeSelector() {
             if (!gameState.playerName) {
@@ -1150,6 +1400,7 @@
             gameState.timeLeft = parseInt(elements.timeLimit.value);
             gameState.totalRounds = parseInt(elements.rounds.value);
             gameState.duplicatePenalty = parseInt(elements.duplicatePenalty.value);
+            gameState.spellingPenalty = parseInt(elements.spellingPenalty.value);
             hideAllPanels();
             alert('Settings saved successfully!');
         }
@@ -1310,6 +1561,14 @@
                     } else if (isValid === 'duplicate') {
                         roundScore -= gameState.duplicatePenalty;
                         roundAnswers.answers[category] += ` (duplicate -${gameState.duplicatePenalty})`;
+                    } else if (isValid === 'misspelled') {
+                        roundScore -= gameState.spellingPenalty;
+                        const spellingCheck = checkSpelling(answer, category);
+                        if (spellingCheck.suggestion) {
+                            roundAnswers.answers[category] += ` (misspelled, did you mean ${spellingCheck.suggestion}? -${gameState.spellingPenalty})`;
+                        } else {
+                            roundAnswers.answers[category] += ` (misspelled -${gameState.spellingPenalty})`;
+                        }
                     }
                 }
             });
@@ -1344,6 +1603,12 @@
             // Check if starts with correct letter
             if (answer.charAt(0).toUpperCase() !== gameState.currentLetter) {
                 return 'incorrect';
+            }
+            
+            // Check spelling
+            const spellingCheck = checkSpelling(answer, category);
+            if (!spellingCheck.correct) {
+                return 'misspelled';
             }
             
             // Check for duplicates with AI
@@ -1402,7 +1667,17 @@
                             answerDiv.className = 'answer-item';
                             
                             const answer = player.answers[category];
-                            const isValid = answer && answer.charAt(0).toUpperCase() === gameState.currentLetter ? 'correct' : 'incorrect';
+                            let isValid = 'incorrect';
+                            
+                            if (answer) {
+                                if (answer.includes('duplicate')) {
+                                    isValid = 'duplicate';
+                                } else if (answer.includes('misspelled')) {
+                                    isValid = 'misspelled';
+                                } else if (answer.charAt(0).toUpperCase() === gameState.currentLetter) {
+                                    isValid = 'correct';
+                                }
+                            }
                             
                             answerDiv.textContent = `${category}: ${answer}`;
                             answerDiv.classList.add(isValid);
@@ -1505,19 +1780,26 @@
                 
                 let points = 0;
                 if (playerAnswer !== '-') {
-                    const isValid = validateAnswer(playerAnswer, category);
+                    const isValid = validateAnswer(playerAnswer.replace(/ \(.*\)/, ''), category);
                     
                     if (isValid === 'correct') {
                         points = 1;
                     } else if (isValid === 'duplicate') {
                         points -= gameState.duplicatePenalty;
+                    } else if (isValid === 'misspelled') {
+                        points -= gameState.spellingPenalty;
                     }
                 }
                 
                 html += `
                     <tr>
                         <td>${category}</td>
-                        <td class="${playerAnswer !== '-' ? validateAnswer(playerAnswer, category) : ''}">${playerAnswer}</td>
+                        <td class="${playerAnswer !== '-' ? 
+                            (playerAnswer.includes('duplicate') ? 'duplicate' : 
+                             playerAnswer.includes('misspelled') ? 'misspelled' : 
+                             validateAnswer(playerAnswer.replace(/ \(.*\)/, ''), category)) : ''}">
+                            ${playerAnswer}
+                        </td>
                         ${gameState.gameMode === 'ai' ? 
                             `<td>${aiAnswer}</td>
                              <td>${points > 0 ? '+' + points : points}</td>` : 
@@ -1565,7 +1847,17 @@
                             answerDiv.className = 'answer-item';
                             
                             const answer = player.answers[category];
-                            const isValid = answer && answer.charAt(0).toUpperCase() === gameState.currentLetter ? 'correct' : 'incorrect';
+                            let isValid = 'incorrect';
+                            
+                            if (answer) {
+                                if (answer.includes('duplicate')) {
+                                    isValid = 'duplicate';
+                                } else if (answer.includes('misspelled')) {
+                                    isValid = 'misspelled';
+                                } else if (answer.charAt(0).toUpperCase() === gameState.currentLetter) {
+                                    isValid = 'correct';
+                                }
+                            }
                             
                             answerDiv.textContent = `${category}: ${answer}`;
                             answerDiv.classList.add(isValid);
@@ -1844,7 +2136,8 @@
                 
                 li.innerHTML = `
                     <span class="player-status ${statusClass}"></span>
-                    ${player.name} ${playerId === gameState.roomRef.child('hostId').key ? '(Host)' : ''}
+                    ${player.name} ${playerId === gameState.playerId ? '(You)' : ''}
+                    ${playerId === gameState.roomRef.child('hostId').key ? '(Host)' : ''}
                 `;
                 
                 elements.playerList.appendChild(li);
