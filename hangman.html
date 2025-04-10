@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <style>
+        :root {
+            --primary: #6a5acd;
+            --secondary: #9370db;
+            --accent: #e6e6fa;
+            --background: #f8f9fa;
+            --text: #333;
+            --white: #fff;
+            --black: #000;
+            --red: #ff6b6b;
+            --green: #51cf66;
+            --yellow: #ffd43b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: var(--white);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid var(--primary);
+        }
+
+        h1 {
+            color: var(--primary);
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 30px;
+        }
+
+        .hangman-display {
+            height: 250px;
+            width: 200px;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        .hangman-part {
+            position: absolute;
+            display: none;
+            background-color: var(--black);
+        }
+
+        /* Hangman parts */
+        .gallows { 
+            height: 10px; 
+            width: 150px; 
+            top: 0; 
+            left: 50px; 
+            display: block;
+        }
+        .pole { 
+            height: 250px; 
+            width: 10px; 
+            top: 0; 
+            left: 50px; 
+            display: block;
+        }
+        .top-bar { 
+            height: 10px; 
+            width: 100px; 
+            top: 0; 
+            left: 50px; 
+            display: block;
+        }
+        .rope { 
+            height: 30px; 
+            width: 5px; 
+            top: 10px; 
+            left: 145px; 
+            display: block;
+        }
+        .head { 
+            height: 40px; 
+            width: 40px; 
+            border-radius: 50%; 
+            top: 40px; 
+            left: 125px; 
+        }
+        .body { 
+            height: 80px; 
+            width: 5px; 
+            top: 80px; 
+            left: 145px; 
+        }
+        .left-arm { 
+            height: 5px; 
+            width: 40px; 
+            top: 100px; 
+            left: 105px; 
+            transform: rotate(30deg);
+        }
+        .right-arm { 
+            height: 5px; 
+            width: 40px; 
+            top: 100px; 
+            left: 150px; 
+            transform: rotate(-30deg);
+        }
+        .left-leg { 
+            height: 5px; 
+            width: 40px; 
+            top: 160px; 
+            left: 105px; 
+            transform: rotate(-30deg);
+        }
+        .right-leg { 
+            height: 5px; 
+            width: 40px; 
+            top: 160px; 
+            left: 150px; 
+            transform: rotate(30deg);
+        }
+        .face {
+            position: absolute;
+            display: none;
+        }
+        .eye-left { 
+            height: 8px; 
+            width: 8px; 
+            border-radius: 50%; 
+            background-color: var(--white);
+            top: 55px; 
+            left: 135px; 
+        }
+        .eye-right { 
+            height: 8px; 
+            width: 8px; 
+            border-radius: 50%; 
+            background-color: var(--white);
+            top: 55px; 
+            left: 147px; 
+        }
+        .mouth { 
+            height: 10px; 
+            width: 20px; 
+            border-bottom-left-radius: 50%; 
+            border-bottom-right-radius: 50%; 
+            background-color: var(--white);
+            top: 70px; 
+            left: 135px; 
+        }
+
+        .word-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 20px 0;
+            font-size: 2rem;
+            letter-spacing: 5px;
+            min-height: 50px;
+        }
+
+        .letter {
+            display: inline-block;
+            width: 30px;
+            text-align: center;
+            border-bottom: 3px solid var(--black);
+            margin: 0 5px;
+        }
+
+        .keyboard {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 8px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .key {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--accent);
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .key:hover {
+            background-color: var(--secondary);
+            color: var(--white);
+            transform: translateY(-2px);
+        }
+
+        .key:disabled {
+            background-color: #ddd;
+            color: #777;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .key.correct {
+            background-color: var(--green);
+            color: var(--white);
+        }
+
+        .key.incorrect {
+            background-color: var(--red);
+            color: var(--white);
+        }
+
+        .game-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: var(--accent);
+            border-radius: 8px;
+        }
+
+        .category-selector {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .category-btn {
+            padding: 8px 15px;
+            margin: 0 5px;
+            border: none;
+            border-radius: 5px;
+            background-color: var(--accent);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .category-btn:hover {
+            background-color: var(--secondary);
+            color: var(--white);
+        }
+
+        .category-btn.active {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .btn-primary {
+            background-color: var(--primary);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background-color: #5f4dbb;
+            transform: translateY(-2px);
+        }
+
+        .btn-success {
+            background-color: var(--green);
+            color: var(--white);
+        }
+
+        .btn-danger {
+            background-color: var(--red);
+            color: var(--white);
+        }
+
+        .message {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+        }
+
+        .success {
+            background-color: rgba(81, 207, 102, 0.2);
+            color: var(--green);
+            display: block;
+        }
+
+        .failure {
+            background-color: rgba(255, 107, 107, 0.2);
+            color: var(--red);
+            display: block;
+        }
+
+        .hint {
+            margin-top: 10px;
+            font-style: italic;
+            color: var(--secondary);
+        }
+
+        /* Monetization styles */
+        .currency-display {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .currency-icon {
+            font-size: 1.2rem;
+        }
+
+        .ad-wall {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            color: white;
+        }
+
+        .ad-content {
+            background-color: white;
+            color: black;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .ad-timer {
+            font-size: 1.5rem;
+            margin: 20px 0;
+            color: var(--primary);
+            font-weight: bold;
+        }
+
+        .close-ad {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+        }
+
+        .purchase-options {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .purchase-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .purchase-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: var(--accent);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .purchase-option:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .purchase-amount {
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .back-to-menu {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: var(--primary);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .back-to-menu:hover {
+            background-color: #5f4dbb;
+            transform: translateY(-2px);
+        }
+
+        .real-money-purchase {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .real-money-container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .real-money-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            background-color: var(--accent);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .real-money-option:hover {
+            background-color: var(--secondary);
+            color: white;
+        }
+
+        .google-signin {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .gsi-material-button {
+            -moz-user-select: none;
+            -webkit-user-select: none;
+            -ms-user-select: none;
+            -webkit-appearance: none;
+            background-color: WHITE;
+            background-image: none;
+            border: 1px solid #747775;
+            -webkit-border-radius: 4px;
+            border-radius: 4px;
+            -webkit-box-sizing: border-box;
+            box-sizing: border-box;
+            color: #1f1f1f;
+            cursor: pointer;
+            font-family: 'Roboto', arial, sans-serif;
+            font-size: 14px;
+            height: 40px;
+            letter-spacing: 0.25px;
+            outline: none;
+            overflow: hidden;
+            padding: 0 12px;
+            position: relative;
+            text-align: center;
+            -webkit-transition: background-color .218s, border-color .218s, box-shadow .218s;
+            transition: background-color .218s, border-color .218s, box-shadow .218s;
+            vertical-align: middle;
+            white-space: nowrap;
+            width: auto;
+            max-width: 400px;
+            min-width: min-content;
+        }
+
+        .gsi-material-button .gsi-material-button-icon {
+            height: 20px;
+            margin-right: 12px;
+            min-width: 20px;
+            width: 20px;
+        }
+
+        .gsi-material-button .gsi-material-button-content-wrapper {
+            -webkit-align-items: center;
+            align-items: center;
+            display: flex;
+            -webkit-flex-direction: row;
+            flex-direction: row;
+            -webkit-flex-wrap: nowrap;
+            flex-wrap: nowrap;
+            height: 100%;
+            justify-content: space-between;
+            position: relative;
+            width: 100%;
+        }
+
+        .gsi-material-button .gsi-material-button-contents {
+            -webkit-flex-grow: 1;
+            flex-grow: 1;
+            font-family: 'Roboto', arial, sans-serif;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            vertical-align: top;
+        }
+
+        .gsi-material-button .gsi-material-button-state {
+            -webkit-transition: opacity .218s;
+            transition: opacity .218s;
+            bottom: 0;
+            left: 0;
+            opacity: 0;
+            position: absolute;
+            right: 0;
+            top: 0;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .key {
+                width: 30px;
+                height: 30px;
+                font-size: 1rem;
+            }
+            
+            .word-display {
+                font-size: 1.5rem;
+                letter-spacing: 3px;
+            }
+            
+            .letter {
+                width: 20px;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .currency-display, .back-to-menu {
+                position: static;
+                margin-bottom: 10px;
+                justify-content: center;
+                display: inline-block;
+                text-align: center;
+                width: calc(100% - 40px);
+                margin-left: 20px;
+                margin-right: 20px;
+            }
+        }
+    </style>
+    <!-- Google Identity Services SDK -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+    <div class="container">
+        <a href="https://ashhar84.github.io/mindgames/index.html" class="back-to-menu">← Back to Main Menu</a>
+        <div class="currency-display">
+            <span class="currency-icon">💎</span>
+            <span id="currencyAmount">100</span>
+            <button class="btn btn-warning" id="buyCurrencyBtn" style="margin-left: 10px; padding: 5px 10px; font-size: 0.8rem;">Buy More</button>
+        </div>
+
+        <header>
+            <h1>Hangman</h1>
+            <p>Guess the word before the man gets hanged!</p>
+        </header>
+        
+        <div class="game-area">
+            <div class="category-selector">
+                <button class="category-btn active" data-category="animals">Animals</button>
+                <button class="category-btn" data-category="countries">Countries</button>
+                <button class="category-btn" data-category="movies">Movies</button>
+                <button class="category-btn" data-category="food">Food</button>
+                <button class="category-btn" data-category="random">Random</button>
+            </div>
+            
+            <div class="hangman-display">
+                <div class="hangman-part gallows"></div>
+                <div class="hangman-part pole"></div>
+                <div class="hangman-part top-bar"></div>
+                <div class="hangman-part rope"></div>
+                <div class="hangman-part head"></div>
+                <div class="hangman-part body"></div>
+                <div class="hangman-part left-arm"></div>
+                <div class="hangman-part right-arm"></div>
+                <div class="hangman-part left-leg"></div>
+                <div class="hangman-part right-leg"></div>
+                <div class="face eye-left"></div>
+                <div class="face eye-right"></div>
+                <div class="face mouth"></div>
+            </div>
+            
+            <div class="word-display" id="wordDisplay"></div>
+            
+            <div class="hint" id="hint"></div>
+            
+            <div class="message" id="message"></div>
+            
+            <div class="keyboard" id="keyboard"></div>
+            
+            <div class="game-info">
+                <div>Guesses left: <span id="guessesLeft">6</span></div>
+                <div>Wrong letters: <span id="wrongLetters"></span></div>
+                <div>Hints left: <span id="hintsLeft">2</span></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="newGameBtn">New Game</button>
+                <button class="btn btn-success" id="hintBtn">Get Hint (Free: <span id="freeHintsLeft">2</span>)</button>
+                <button class="btn btn-danger" id="giveUpBtn">Give Up</button>
+                <button class="btn btn-warning" id="buyHintsBtn">Buy More Hints</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Ad Wall -->
+    <div class="ad-wall" id="adWall">
+        <button class="close-ad" id="closeAdBtn">✕</button>
+        <div class="ad-content">
+            <h2>Watch an Ad for 5 Free Hints!</h2>
+            <p>Please watch this short ad to earn 5 additional hints.</p>
+            <div class="ad-timer" id="adTimer">Ad will complete in 5 seconds...</div>
+            <button class="btn btn-primary" id="skipAdBtn">Skip Ad (Costs 10💎)</button>
+        </div>
+    </div>
+
+    <!-- Purchase Options (Gems) -->
+    <div class="purchase-options" id="purchaseOptions">
+        <div class="purchase-container">
+            <h2>Buy More Hints</h2>
+            <p>Your current gems: <span id="currentGemsDisplay">100</span>💎</p>
+            
+            <div class="purchase-option" data-amount="5" data-price="20">
+                <span>5 Hints</span>
+                <span class="purchase-amount">20💎</span>
+            </div>
+            
+            <div class="purchase-option" data-amount="15" data-price="50">
+                <span>15 Hints</span>
+                <span class="purchase-amount">50💎</span>
+            </div>
+            
+            <div class="purchase-option" data-amount="30" data-price="80">
+                <span>30 Hints</span>
+                <span class="purchase-amount">80💎</span>
+            </div>
+            
+            <div class="purchase-option" data-amount="100" data-price="200">
+                <span>100 Hints</span>
+                <span class="purchase-amount">200💎</span>
+            </div>
+            
+            <button class="btn btn-danger" id="closePurchaseBtn" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
+    <!-- Real Money Purchase Options -->
+    <div class="real-money-purchase" id="realMoneyPurchase">
+        <div class="real-money-container">
+            <h2>Buy Gems with Real Money</h2>
+            <p>Purchase gems to get more hints and skip ads!</p>
+            
+            <div id="pricingOptions">
+                <!-- Prices will be dynamically inserted here based on local currency -->
+            </div>
+            
+            <div class="google-signin" id="googleSignIn">
+                <!-- Google Sign-In button will be inserted here -->
+            </div>
+            
+            <div class="payment-methods">
+                <h3 style="margin-top: 20px;">Payment Methods:</h3>
+                <div style="display: flex; justify-content: center; gap: 15px; margin-top: 10px;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/2560px-Visa_Inc._logo.svg.png" alt="Visa" style="height: 30px;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2a/Mastercard-logo.svg/1280px-Mastercard-logo.svg.png" alt="Mastercard" style="height: 30px;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Google_%22G%22_Logo.svg/2048px-Google_%22G%22_Logo.svg.png" alt="Google Pay" style="height: 30px;">
+                    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/PayPal.svg/2560px-PayPal.svg.png" alt="PayPal" style="height: 30px;">
+                </div>
+            </div>
+            
+            <button class="btn btn-danger" id="closeRealMoneyBtn" style="margin-top: 20px;">Close</button>
+        </div>
+    </div>
+
+    <script>
+        // Word categories
+        const wordCategories = {
+            animals: [
+                { word: "ELEPHANT", hint: "Largest land animal" },
+                { word: "GIRAFFE", hint: "Tallest animal with a long neck" },
+                { word: "KANGAROO", hint: "Australian marsupial that hops" },
+                { word: "DOLPHIN", hint: "Intelligent marine mammal" },
+                { word: "CHEETAH", hint: "Fastest land animal" },
+                { word: "PENGUIN", hint: "Flightless bird that lives in Antarctica" },
+                { word: "RHINOCEROS", hint: "Large herbivore with one or two horns" },
+                { word: "OCTOPUS", hint: "Sea creature with eight arms" }
+            ],
+            countries: [
+                { word: "CANADA", hint: "Known for maple syrup and hockey" },
+                { word: "JAPAN", hint: "Land of the rising sun" },
+                { word: "BRAZIL", hint: "Largest country in South America" },
+                { word: "EGYPT", hint: "Home of the ancient pyramids" },
+                { word: "AUSTRALIA", hint: "Country and continent with kangaroos" },
+                { word: "ITALY", hint: "Shaped like a boot" },
+                { word: "SWITZERLAND", hint: "Known for chocolate and watches" },
+                { word: "MEXICO", hint: "Spanish-speaking country south of the USA" }
+            ],
+            movies: [
+                { word: "TITANIC", hint: "1997 romance-disaster film about a ship" },
+                { word: "AVATAR", hint: "Highest-grossing film with blue aliens" },
+                { word: "JURASSIC PARK", hint: "Dinosaur theme park gone wrong" },
+                { word: "FROZEN", hint: "Disney animated film with 'Let It Go'" },
+                { word: "INCEPTION", hint: "Mind-bending film about dreams" },
+                { word: "GLADIATOR", hint: "2000 historical drama starring Russell Crowe" },
+                { word: "CASABLANCA", hint: "Classic 1942 romance film set in Morocco" },
+                { word: "PSYCHO", hint: "Hitchcock's famous horror film with shower scene" }
+            ],
+            food: [
+                { word: "PIZZA", hint: "Italian dish with dough, sauce, and cheese" },
+                { word: "SUSHI", hint: "Japanese dish with rice and raw fish" },
+                { word: "PASTA", hint: "Italian staple made from wheat flour" },
+                { word: "TACO", hint: "Mexican dish with folded tortilla" },
+                { word: "CURRY", hint: "Spicy dish popular in India" },
+                { word: "BURGER", hint: "Sandwich with a patty and buns" },
+                { word: "LASAGNA", hint: "Layered pasta dish with cheese and meat" },
+                { word: "STEAK", hint: "Grilled or fried slice of beef" }
+            ],
+            random: [
+                { word: "KEYBOARD", hint: "Computer input device with keys" },
+                { word: "MOUNTAIN", hint: "Large natural elevation of the earth's surface" },
+                { word: "LIBRARY", hint: "Place where books are kept" },
+                { word: "BICYCLE", hint: "Two-wheeled vehicle powered by pedals" },
+                { word: "TELEPHONE", hint: "Device used to communicate over distances" },
+                { word: "UMBRELLA", hint: "Protection from rain" },
+                { word: "CALENDAR", hint: "Shows days, weeks, and months" },
+                { word: "BALLOON", hint: "Inflatable rubber bag" }
+            ]
+        };
+
+        // Game state
+        let currentWord = "";
+        let currentHint = "";
+        let guessedLetters = [];
+        let wrongLetters = [];
+        let remainingGuesses = 6;
+        let currentCategory = "animals";
+        let gameActive = false;
+        let gameWon = false;
+        let freeHintsLeft = 2;
+        let totalHintsLeft = 2;
+        let playerCurrency = 100; // Starting currency (gems)
+        let userEmail = null;
+        let isSignedIn = false;
+
+        // Currency conversion rates (example values)
+        const currencyRates = {
+            'USD': 1.00,   // US Dollar (base)
+            'EUR': 0.85,   // Euro
+            'GBP': 0.73,   // British Pound
+            'INR': 74.50,  // Indian Rupee
+            'JPY': 110.00, // Japanese Yen
+            'CAD': 1.25,   // Canadian Dollar
+            'AUD': 1.30,   // Australian Dollar
+            'CNY': 6.45    // Chinese Yuan
+        };
+
+        // Base prices in USD
+        const basePrices = [
+            { amount: 100, price: 0.99 },
+            { amount: 300, price: 1.99 },
+            { amount: 1000, price: 4.99 },
+            { amount: 2500, price: 9.99 }
+        ];
+
+        // DOM elements
+        const wordDisplay = document.getElementById("wordDisplay");
+        const keyboard = document.getElementById("keyboard");
+        const guessesLeftDisplay = document.getElementById("guessesLeft");
+        const wrongLettersDisplay = document.getElementById("wrongLetters");
+        const hintsLeftDisplay = document.getElementById("hintsLeft");
+        const freeHintsLeftDisplay = document.getElementById("freeHintsLeft");
+        const newGameBtn = document.getElementById("newGameBtn");
+        const hintBtn = document.getElementById("hintBtn");
+        const giveUpBtn = document.getElementById("giveUpBtn");
+        const buyHintsBtn = document.getElementById("buyHintsBtn");
+        const buyCurrencyBtn = document.getElementById("buyCurrencyBtn");
+        const messageDisplay = document.getElementById("message");
+        const hintDisplay = document.getElementById("hint");
+        const categoryButtons = document.querySelectorAll(".category-btn");
+        const hangmanParts = document.querySelectorAll(".hangman-part:not(.gallows):not(.pole):not(.top-bar):not(.rope)");
+        const currencyAmountDisplay = document.getElementById("currencyAmount");
+        const adWall = document.getElementById("adWall");
+        const closeAdBtn = document.getElementById("closeAdBtn");
+        const skipAdBtn = document.getElementById("skipAdBtn");
+        const adTimer = document.getElementById("adTimer");
+        const purchaseOptions = document.getElementById("purchaseOptions");
+        const closePurchaseBtn = document.getElementById("closePurchaseBtn");
+        const currentGemsDisplay = document.getElementById("currentGemsDisplay");
+        const purchaseOptionButtons = document.querySelectorAll(".purchase-option");
+        const realMoneyPurchase = document.getElementById("realMoneyPurchase");
+        const closeRealMoneyBtn = document.getElementById("closeRealMoneyBtn");
+        const pricingOptions = document.getElementById("pricingOptions");
+        const googleSignIn = document.getElementById("googleSignIn");
+
+        // Initialize the game
+        function initGame() {
+            // Load saved currency
+            loadCurrency();
+            
+            // Create keyboard
+            createKeyboard();
+            
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Initialize Google Sign-In
+            initGoogleSignIn();
+            
+            // Detect user's local currency
+            detectLocalCurrency();
+            
+            // Start a new game
+            startNewGame();
+        }
+
+        // Initialize Google Sign-In
+        function initGoogleSignIn() {
+            google.accounts.id.initialize({
+                client_id: 'YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com',
+                callback: handleCredentialResponse
+            });
+            
+            google.accounts.id.renderButton(
+                googleSignIn,
+                { 
+                    theme: "outline", 
+                    size: "large",
+                    type: "standard",
+                    shape: "rectangular",
+                    text: "signin_with",
+                    logo_alignment: "left"
+                }
+            );
+            
+            google.accounts.id.prompt();
+        }
+
+        // Handle Google Sign-In response
+        function handleCredentialResponse(response) {
+            const responsePayload = parseJwt(response.credential);
+            userEmail = responsePayload.email;
+            isSignedIn = true;
+            console.log('Signed in as: ' + userEmail);
+            
+            // Update UI to show signed-in state
+            googleSignIn.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <img src="${responsePayload.picture}" style="width: 30px; height: 30px; border-radius: 50%;">
+                    <span>${responsePayload.name}</span>
+                </div>
+            `;
+        }
+
+        // Helper function to parse JWT
+        function parseJwt(token) {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            
+            return JSON.parse(jsonPayload);
+        }
+
+        // Detect user's local currency
+        function detectLocalCurrency() {
+            // In a real implementation, you would detect the user's country
+            // For this demo, we'll use a mock function or browser's locale
+            let currencyCode = 'USD';
+            
+            try {
+                // Try to get from browser
+                const locale = navigator.language || 'en-US';
+                const region = locale.split('-')[1] || 'US';
+                
+                // Simple mapping of country codes to currency codes
+                const countryToCurrency = {
+                    'US': 'USD',
+                    'GB': 'GBP',
+                    'DE': 'EUR',
+                    'FR': 'EUR',
+                    'IT': 'EUR',
+                    'ES': 'EUR',
+                    'JP': 'JPY',
+                    'IN': 'INR',
+                    'CA': 'CAD',
+                    'AU': 'AUD',
+                    'CN': 'CNY'
+                };
+                
+                currencyCode = countryToCurrency[region] || 'USD';
+            } catch (e) {
+                console.log("Couldn't detect currency, defaulting to USD");
+            }
+            
+            // Update pricing based on detected currency
+            updatePricing(currencyCode);
+        }
+
+        // Update pricing based on currency
+        function updatePricing(currencyCode) {
+            const rate = currencyRates[currencyCode] || 1.0;
+            const symbol = getCurrencySymbol(currencyCode);
+            
+            pricingOptions.innerHTML = '';
+            
+            basePrices.forEach(option => {
+                const localPrice = option.price * rate;
+                const roundedPrice = Math.round(localPrice * 100) / 100;
+                
+                const optionElement = document.createElement('div');
+                optionElement.className = 'real-money-option';
+                optionElement.dataset.amount = option.amount;
+                optionElement.dataset.price = roundedPrice;
+                optionElement.innerHTML = `
+                    <span>${option.amount} Gems</span>
+                    <span class="purchase-amount">${symbol}${roundedPrice.toFixed(2)}</span>
+                `;
+                
+                pricingOptions.appendChild(optionElement);
+                
+                // Add event listener for the new option
+                optionElement.addEventListener('click', () => {
+                    if (!isSignedIn) {
+                        alert('Please sign in with Google to make a purchase');
+                        return;
+                    }
+                    
+                    if (confirm(`Purchase ${option.amount} gems for ${symbol}${roundedPrice.toFixed(2)}?`)) {
+                        // In a real implementation, this would connect to a payment processor
+                        // For this demo, we'll just simulate the purchase
+                        simulatePurchase(option.amount, roundedPrice, currencyCode);
+                    }
+                });
+            });
+        }
+
+        // Get currency symbol
+        function getCurrencySymbol(currencyCode) {
+            const symbols = {
+                'USD': '$',
+                'EUR': '€',
+                'GBP': '£',
+                'JPY': '¥',
+                'INR': '₹',
+                'CAD': 'CA$',
+                'AUD': 'AU$',
+                'CNY': 'CN¥'
+            };
+            
+            return symbols[currencyCode] || '$';
+        }
+
+        // Simulate a purchase (in real app, this would call your payment processor)
+        function simulatePurchase(amount, price, currency) {
+            console.log(`Processing purchase of ${amount} gems for ${price} ${currency} for user ${userEmail}`);
+            
+            // Simulate API call delay
+            setTimeout(() => {
+                playerCurrency += amount;
+                updateCurrencyDisplay();
+                saveCurrency();
+                alert(`Thank you for your purchase! You now have ${playerCurrency} gems.`);
+                realMoneyPurchase.style.display = "none";
+            }, 1000);
+        }
+
+        // Create keyboard buttons
+        function createKeyboard() {
+            keyboard.innerHTML = "";
+            for (let i = 65; i <= 90; i++) {
+                const letter = String.fromCharCode(i);
+                const button = document.createElement("button");
+                button.className = "key";
+                button.textContent = letter;
+                button.dataset.letter = letter;
+                keyboard.appendChild(button);
+            }
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Keyboard button clicks
+            keyboard.addEventListener("click", (e) => {
+                if (e.target.classList.contains("key") && gameActive) {
+                    const letter = e.target.dataset.letter;
+                    makeGuess(letter);
+                }
+            });
+            
+            // Physical keyboard input
+            document.addEventListener("keydown", (e) => {
+                if (gameActive && /^[a-z]$/i.test(e.key)) {
+                    makeGuess(e.key.toUpperCase());
+                }
+            });
+            
+            // New game button
+            newGameBtn.addEventListener("click", startNewGame);
+            
+            // Hint button
+            hintBtn.addEventListener("click", showHint);
+            
+            // Give up button
+            giveUpBtn.addEventListener("click", giveUp);
+            
+            // Buy hints button
+            buyHintsBtn.addEventListener("click", () => {
+                purchaseOptions.style.display = "flex";
+                currentGemsDisplay.textContent = playerCurrency;
+            });
+            
+            // Buy currency button
+            buyCurrencyBtn.addEventListener("click", () => {
+                realMoneyPurchase.style.display = "flex";
+            });
+            
+            // Category buttons
+            categoryButtons.forEach(button => {
+                button.addEventListener("click", () => {
+                    currentCategory = button.dataset.category;
+                    categoryButtons.forEach(btn => btn.classList.remove("active"));
+                    button.classList.add("active");
+                    startNewGame();
+                });
+            });
+            
+            // Ad wall buttons
+            closeAdBtn.addEventListener("click", closeAdWall);
+            skipAdBtn.addEventListener("click", skipAd);
+            
+            // Purchase options
+            closePurchaseBtn.addEventListener("click", () => {
+                purchaseOptions.style.display = "none";
+            });
+            
+            purchaseOptionButtons.forEach(option => {
+                option.addEventListener("click", () => {
+                    const amount = parseInt(option.dataset.amount);
+                    const price = parseInt(option.dataset.price);
+                    
+                    if (playerCurrency >= price) {
+                        playerCurrency -= price;
+                        totalHintsLeft += amount;
+                        updateCurrencyDisplay();
+                        saveCurrency();
+                        alert(`Purchased ${amount} hints! Total hints now: ${totalHintsLeft}`);
+                        purchaseOptions.style.display = "none";
+                        updateHintsDisplay();
+                    } else {
+                        alert("Not enough gems! Watch an ad or buy more gems.");
+                        purchaseOptions.style.display = "none";
+                        realMoneyPurchase.style.display = "flex";
+                    }
+                });
+            });
+            
+            // Real money purchase options
+            closeRealMoneyBtn.addEventListener("click", () => {
+                realMoneyPurchase.style.display = "none";
+            });
+        }
+
+        // Start a new game
+        function startNewGame() {
+            // Reset game state
+            guessedLetters = [];
+            wrongLetters = [];
+            remainingGuesses = 6;
+            gameActive = true;
+            gameWon = false;
+            
+            // Reset hints for new game (keep purchased hints)
+            freeHintsLeft = 2;
+            updateHintsDisplay();
+            
+            // Hide all hangman parts
+            hangmanParts.forEach(part => part.style.display = "none");
+            
+            // Hide message
+            messageDisplay.style.display = "none";
+            messageDisplay.className = "message";
+            hintDisplay.textContent = "";
+            
+            // Select a random word from the current category
+            const words = wordCategories[currentCategory];
+            const randomIndex = Math.floor(Math.random() * words.length);
+            currentWord = words[randomIndex].word;
+            currentHint = words[randomIndex].hint;
+            
+            // Update displays
+            updateWordDisplay();
+            updateGameInfo();
+            
+            // Enable all keyboard buttons
+            document.querySelectorAll(".key").forEach(button => {
+                button.disabled = false;
+                button.className = "key";
+            });
+        }
+
+        // Make a letter guess
+        function makeGuess(letter) {
+            if (!gameActive || guessedLetters.includes(letter)) return;
+            
+            // Add to guessed letters
+            guessedLetters.push(letter);
+            
+            // Check if letter is in the word
+            if (currentWord.includes(letter)) {
+                // Correct guess
+                document.querySelector(`.key[data-letter="${letter}"]`).classList.add("correct");
+                
+                // Check if word is complete
+                if (checkWin()) {
+                    endGame(true);
+                    // Reward player for winning
+                    addCurrency(10);
+                }
+            } else {
+                // Wrong guess
+                document.querySelector(`.key[data-letter="${letter}"]`).classList.add("incorrect");
+                wrongLetters.push(letter);
+                remainingGuesses--;
+                updateHangman();
+                
+                // Check if game is lost
+                if (remainingGuesses <= 0) {
+                    endGame(false);
+                }
+            }
+            
+            // Update displays
+            updateWordDisplay();
+            updateGameInfo();
+        }
+
+        // Update the word display with guessed letters
+        function updateWordDisplay() {
+            wordDisplay.innerHTML = "";
+            for (const letter of currentWord) {
+                const letterElement = document.createElement("span");
+                letterElement.className = "letter";
+                if (guessedLetters.includes(letter) || !gameActive) {
+                    letterElement.textContent = letter;
+                } else if (letter === " ") {
+                    letterElement.textContent = " ";
+                    letterElement.style.borderBottom = "none";
+                    letterElement.style.margin = "0 15px";
+                } else {
+                    letterElement.textContent = " ";
+                }
+                wordDisplay.appendChild(letterElement);
+            }
+        }
+
+        // Update game info displays
+        function updateGameInfo() {
+            guessesLeftDisplay.textContent = remainingGuesses;
+            wrongLettersDisplay.textContent = wrongLetters.join(", ");
+        }
+
+        // Update hints display
+        function updateHintsDisplay() {
+            hintsLeftDisplay.textContent = totalHintsLeft;
+            freeHintsLeftDisplay.textContent = freeHintsLeft;
+        }
+
+        // Update hangman display based on wrong guesses
+        function updateHangman() {
+            const partsToShow = 6 - remainingGuesses;
+            for (let i = 0; i < partsToShow; i++) {
+                if (i < hangmanParts.length) {
+                    hangmanParts[i].style.display = "block";
+                    
+                    // Show sad face when game is about to end
+                    if (remainingGuesses === 1) {
+                        document.querySelectorAll(".face").forEach(face => {
+                            face.style.display = "block";
+                        });
+                    }
+                }
+            }
+        }
+
+        // Check if player has won
+        function checkWin() {
+            return currentWord.split("").every(letter => 
+                letter === " " || guessedLetters.includes(letter)
+            );
+        }
+
+        // End the game
+        function endGame(won) {
+            gameActive = false;
+            gameWon = won;
+            
+            // Show full word
+            updateWordDisplay();
+            
+            // Display message
+            messageDisplay.style.display = "block";
+            if (won) {
+                messageDisplay.textContent = "Congratulations! You won! +10💎";
+                messageDisplay.classList.add("success");
+            } else {
+                messageDisplay.textContent = `Game over! The word was ${currentWord}.`;
+                messageDisplay.classList.add("failure");
+            }
+            
+            // Disable all keyboard buttons
+            document.querySelectorAll(".key").forEach(button => {
+                button.disabled = true;
+            });
+        }
+
+        // Show hint
+        function showHint() {
+            if (!gameActive) return;
+            
+            if (totalHintsLeft > 0) {
+                // Use free hints first
+                if (freeHintsLeft > 0) {
+                    freeHintsLeft--;
+                } else {
+                    // Use paid hints
+                    totalHintsLeft--;
+                }
+                
+                hintDisplay.textContent = `Hint: ${currentHint}`;
+                updateHintsDisplay();
+                
+                // If no hints left, show ad wall
+                if (totalHintsLeft === 0) {
+                    setTimeout(() => {
+                        showAdWall();
+                    }, 1500);
+                }
+            } else {
+                showAdWall();
+            }
+        }
+
+        // Show ad wall
+        function showAdWall() {
+            adWall.style.display = "flex";
+            let secondsLeft = 5;
+            adTimer.textContent = `Ad will complete in ${secondsLeft} seconds...`;
+            
+            const timer = setInterval(() => {
+                secondsLeft--;
+                adTimer.textContent = `Ad will complete in ${secondsLeft} seconds...`;
+                
+                if (secondsLeft <= 0) {
+                    clearInterval(timer);
+                    completeAd();
+                }
+            }, 1000);
+        }
+
+        // Complete ad watching
+        function completeAd() {
+            totalHintsLeft += 5;
+            addCurrency(5); // Reward for watching ad
+            updateHintsDisplay();
+            closeAdWall();
+            alert("Thanks for watching! You earned 5 hints and 5💎!");
+        }
+
+        // Skip ad
+        function skipAd() {
+            if (playerCurrency >= 10) {
+                playerCurrency -= 10;
+                saveCurrency();
+                updateCurrencyDisplay();
+                totalHintsLeft += 5;
+                updateHintsDisplay();
+                closeAdWall();
+                alert("Skipped ad! You got 5 hints.");
+            } else {
+                alert("Not enough gems to skip ad!");
+            }
+        }
+
+        // Close ad wall
+        function closeAdWall() {
+            adWall.style.display = "none";
+        }
+
+        // Give up current game
+        function giveUp() {
+            if (gameActive) {
+                endGame(false);
+            }
+        }
+
+        // Currency functions
+        function addCurrency(amount) {
+            playerCurrency += amount;
+            updateCurrencyDisplay();
+            saveCurrency();
+        }
+
+        function updateCurrencyDisplay() {
+            currencyAmountDisplay.textContent = playerCurrency;
+        }
+
+        function saveCurrency() {
+            localStorage.setItem("hangmanCurrency", playerCurrency.toString());
+        }
+
+        function loadCurrency() {
+            const savedCurrency = localStorage.getItem("hangmanCurrency");
+            if (savedCurrency) {
+                playerCurrency = parseInt(savedCurrency);
+                updateCurrencyDisplay();
+            }
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
