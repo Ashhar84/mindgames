@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mastermind | Mind Games</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .game-container {
+            max-width: 500px;
+            margin: 0 auto;
+            text-align: center;
+        }
+        
+        .game-board {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .guess-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            background-color: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        .pegs {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .peg {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .peg:hover {
+            transform: scale(1.1);
+        }
+        
+        .peg.empty {
+            background-color: white;
+        }
+        
+        .peg.red { background-color: #f44336; }
+        .peg.blue { background-color: #2196f3; }
+        .peg.green { background-color: #4caf50; }
+        .peg.yellow { background-color: #ffeb3b; }
+        .peg.purple { background-color: #9c27b0; }
+        .peg.orange { background-color: #ff9800; }
+        
+        .feedback {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 5px;
+            width: 40px;
+        }
+        
+        .feedback-peg {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #333;
+        }
+        
+        .feedback-peg.correct {
+            background-color: #f44336;
+        }
+        
+        .feedback-peg.partial {
+            background-color: white;
+        }
+        
+        .color-selector {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .color-option {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #333;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .color-option:hover {
+            transform: scale(1.1);
+        }
+        
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .game-info {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .info-box {
+            background-color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .settings {
+            margin: 20px 0;
+            padding: 15px;
+            background-color: white;
+            border-radius: 5px;
+        }
+        
+        .back-btn {
+            display: inline-block;
+            margin-top: 20px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .secret-code {
+            display: flex;
+            justify-content: center;
+            gap: 5px;
+            margin: 20px 0;
+        }
+        
+        @media (max-width: 500px) {
+            .peg, .color-option {
+                width: 30px;
+                height: 30px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Mastermind</h1>
+            <p>Decipher the secret color code!</p>
+        </header>
+        
+        <div class="game-container">
+            <div class="game-info">
+                <div class="info-box">Guesses: <span id="guesses">0</span>/10</div>
+                <div class="info-box">Score: <span id="score">0</span></div>
+            </div>
+            
+            <div class="game-board" id="gameBoard"></div>
+            
+            <div class="color-selector">
+                <div class="color-option red" data-color="red"></div>
+                <div class="color-option blue" data-color="blue"></div>
+                <div class="color-option green" data-color="green"></div>
+                <div class="color-option yellow" data-color="yellow"></div>
+                <div class="color-option purple" data-color="purple"></div>
+                <div class="color-option orange" data-color="orange"></div>
+            </div>
+            
+            <div class="controls">
+                <button class="btn btn-primary" id="submitGuessBtn">Submit Guess</button>
+                <button class="btn btn-danger" id="newGameBtn">New Game</button>
+                <button class="btn btn-success" id="showCodeBtn">Show Code</button>
+            </div>
+            
+            <div class="settings">
+                <label for="difficulty">Difficulty:</label>
+                <select id="difficulty">
+                    <option value="easy">Easy (4 colors, no duplicates)</option>
+                    <option value="medium" selected>Medium (4 colors, duplicates)</option>
+                    <option value="hard">Hard (6 colors, duplicates)</option>
+                </select>
+            </div>
+            
+            <a href="index.html" class="back-btn">← Back to Main Menu</a>
+        </div>
+    </div>
+
+    <script>
+        // Game state
+        const gameState = {
+            secretCode: [],
+            currentGuess: [],
+            guesses: [],
+            currentRow: 0,
+            score: 0,
+            gameActive: false,
+            difficulty: 'medium',
+            colors: ['red', 'blue', 'green', 'yellow', 'purple', 'orange']
+        };
+
+        // DOM elements
+        const elements = {
+            gameBoard: document.getElementById('gameBoard'),
+            guessesDisplay: document.getElementById('guesses'),
+            scoreDisplay: document.getElementById('score'),
+            submitGuessBtn: document.getElementById('submitGuessBtn'),
+            newGameBtn: document.getElementById('newGameBtn'),
+            showCodeBtn: document.getElementById('showCodeBtn'),
+            difficulty: document.getElementById('difficulty'),
+            colorOptions: document.querySelectorAll('.color-option')
+        };
+
+        // Initialize the game
+        function initGame() {
+            // Set up event listeners
+            setupEventListeners();
+            
+            // Start a new game
+            startGame();
+        }
+
+        // Start a new game
+        function startGame() {
+            // Clear previous game
+            clearGame();
+            
+            // Get settings
+            gameState.difficulty = elements.difficulty.value;
+            
+            // Generate secret code based on difficulty
+            generateSecretCode();
+            
+            // Create game board
+            createGameBoard();
+            
+            // Game is active
+            gameState.gameActive = true;
+        }
+
+        // Clear the current game
+        function clearGame() {
+            // Reset game state
+            gameState.secretCode = [];
+            gameState.currentGuess = [];
+            gameState.guesses = [];
+            gameState.currentRow = 0;
+            
+            // Clear game board
+            elements.gameBoard.innerHTML = '';
+        }
+
+        // Generate the secret code
+        function generateSecretCode() {
+            gameState.secretCode = [];
+            
+            let codeLength, colorPool;
+            
+            switch (gameState.difficulty) {
+                case 'easy':
+                    codeLength = 4;
+                    colorPool = [...gameState.colors].slice(0, 4);
+                    // No duplicates
+                    while (gameState.secretCode.length < codeLength) {
+                        const randomColor = colorPool[Math.floor(Math.random() * colorPool.length)];
+                        if (!gameState.secretCode.includes(randomColor)) {
+                            gameState.secretCode.push(randomColor);
+                        }
+                    }
+                    break;
+                    
+                case 'medium':
+                    codeLength = 4;
+                    colorPool = [...gameState.colors].slice(0, 4);
+                    // Allow duplicates
+                    for (let i = 0; i < codeLength; i++) {
+                        gameState.secretCode.push(colorPool[Math.floor(Math.random() * colorPool.length)]);
+                    }
+                    break;
+                    
+                case 'hard':
+                    codeLength = 4;
+                    colorPool = [...gameState.colors];
+                    // Allow duplicates
+                    for (let i = 0; i < codeLength; i++) {
+                        gameState.secretCode.push(colorPool[Math.floor(Math.random() * colorPool.length)]);
+                    }
+                    break;
+            }
+        }
+
+        // Create the game board
+        function createGameBoard() {
+            elements.gameBoard.innerHTML = '';
+            
+            // Create 10 rows (for 10 guesses)
+            for (let i = 0; i < 10; i++) {
+                const row = document.createElement('div');
+                row.className = 'guess-row';
+                row.dataset.row = i;
+                
+                // Create pegs for the guess
+                const pegs = document.createElement('div');
+                pegs.className = 'pegs';
+                
+                for (let j = 0; j < 4; j++) {
+                    const peg = document.createElement('div');
+                    peg.className = 'peg empty';
+                    peg.dataset.position = j;
+                    peg.dataset.row = i;
+                    peg.addEventListener('click', () => selectPeg(peg));
+                    pegs.appendChild(peg);
+                }
+                
+                // Create feedback area
+                const feedback = document.createElement('div');
+                feedback.className = 'feedback';
+                
+                for (let j = 0; j < 4; j++) {
+                    const feedbackPeg = document.createElement('div');
+                    feedbackPeg.className = 'feedback-peg';
+                    feedback.appendChild(feedbackPeg);
+                }
+                
+                row.appendChild(pegs);
+                row.appendChild(feedback);
+                elements.gameBoard.appendChild(row);
+            }
+            
+            // Update guesses display
+            elements.guessesDisplay.textContent = '0';
+        }
+
+        // Select a peg to change its color
+        function selectPeg(peg) {
+            if (!gameState.gameActive || parseInt(peg.dataset.row) !== gameState.currentRow) {
+                return;
+            }
+            
+            // Find the selected color
+            const selectedColor = document.querySelector('.color-option.selected');
+            if (!selectedColor) return;
+            
+            const color = selectedColor.dataset.color;
+            
+            // Update peg color
+            peg.className = `peg ${color}`;
+            
+            // Update current guess
+            const position = parseInt(peg.dataset.position);
+            gameState.currentGuess[position] = color;
+        }
+
+        // Submit a guess
+        function submitGuess() {
+            if (!gameState.gameActive || gameState.currentRow >= 10) {
+                return;
+            }
+            
+            // Check if guess is complete
+            if (gameState.currentGuess.length !== 4 || gameState.currentGuess.includes(undefined)) {
+                alert('Please complete your guess by selecting colors for all pegs!');
+                return;
+            }
+            
+            // Store the guess
+            gameState.guesses.push([...gameState.currentGuess]);
+            
+            // Provide feedback
+            const feedback = getFeedback(gameState.currentGuess);
+            
+            // Update the UI
+            updateGuessRow(gameState.currentRow, gameState.currentGuess, feedback);
+            
+            // Check if won
+            if (feedback.correct === 4) {
+                endGame(true);
+                return;
+            }
+            
+            // Move to next row
+            gameState.currentRow++;
+            gameState.currentGuess = [];
+            
+            // Update guesses display
+            elements.guessesDisplay.textContent = gameState.currentRow;
+            
+            // Check if lost
+            if (gameState.currentRow >= 10) {
+                endGame(false);
+            }
+        }
+
+        // Get feedback for a guess
+        function getFeedback(guess) {
+            const feedback = { correct: 0, partial: 0 };
+            const code = [...gameState.secretCode];
+            const guessed = [...guess];
+            
+            // First check for correct positions
+            for (let i = 0; i < code.length; i++) {
+                if (guessed[i] === code[i]) {
+                    feedback.correct++;
+                    code[i] = null;
+                    guessed[i] = null;
+                }
+            }
+            
+            // Then check for correct colors in wrong positions
+            for (let i = 0; i < guessed.length; i++) {
+                if (guessed[i] !== null) {
+                    const index = code.indexOf(guessed[i]);
+                    if (index !== -1) {
+                        feedback.partial++;
+                        code[index] = null;
+                    }
+                }
+            }
+            
+            return feedback;
+        }
+
+        // Update a guess row with feedback
+        function updateGuessRow(row, guess, feedback) {
+            const rowElement = document.querySelector(`.guess-row[data-row="${row}"]`);
+            
+            // Update pegs
+            const pegs = rowElement.querySelectorAll('.peg');
+            pegs.forEach((peg, i) => {
+                peg.className = `peg ${guess[i]}`;
+                peg.style.pointerEvents = 'none';
+            });
+            
+            // Update feedback
+            const feedbackPegs = rowElement.querySelectorAll('.feedback-peg');
+            let feedbackIndex = 0;
+            
+            // Add correct feedback pegs
+            for (let i = 0; i < feedback.correct; i++) {
+                feedbackPegs[feedbackIndex].classList.add('correct');
+                feedbackIndex++;
+            }
+            
+            // Add partial feedback pegs
+            for (let i = 0; i < feedback.partial; i++) {
+                feedbackPegs[feedbackIndex].classList.add('partial');
+                feedbackIndex++;
+            }
+        }
+
+        // Show the secret code
+        function showCode() {
+            if (!gameState.gameActive) return;
+            
+            // Create a temporary display of the code
+            const codeDisplay = document.createElement('div');
+            codeDisplay.className = 'secret-code';
+            
+            for (const color of gameState.secretCode) {
+                const peg = document.createElement('div');
+                peg.className = `peg ${color}`;
+                codeDisplay.appendChild(peg);
+            }
+            
+            // Insert before game board
+            elements.gameBoard.parentNode.insertBefore(codeDisplay, elements.gameBoard);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                codeDisplay.remove();
+            }, 3000);
+        }
+
+        // End the game
+        function endGame(won) {
+            gameState.gameActive = false;
+            
+            // Calculate score
+            const score = won ? (10 - gameState.currentRow) * 100 : 0;
+            gameState.score += score;
+            elements.scoreDisplay.textContent = gameState.score;
+            
+            // Show message
+            setTimeout(() => {
+                if (won) {
+                    alert(`Congratulations! You cracked the code in ${gameState.currentRow + 1} guesses! Score: +${score}`);
+                } else {
+                    alert(`Game over! The secret code was: ${gameState.secretCode.join(', ')}`);
+                }
+            }, 500);
+        }
+
+        // Set up event listeners
+        function setupEventListeners() {
+            // Color selection
+            elements.colorOptions.forEach(option => {
+                option.addEventListener('click', function() {
+                    // Remove selection from other options
+                    elements.colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    
+                    // Select this option
+                    this.classList.add('selected');
+                });
+            });
+            
+            // Submit guess button
+            elements.submitGuessBtn.addEventListener('click', submitGuess);
+            
+            // New game button
+            elements.newGameBtn.addEventListener('click', startGame);
+            
+            // Show code button
+            elements.showCodeBtn.addEventListener('click', showCode);
+            
+            // Difficulty selector
+            elements.difficulty.addEventListener('change', function() {
+                gameState.difficulty = this.value;
+            });
+            
+            // Keyboard shortcuts for colors
+            document.addEventListener('keydown', (e) => {
+                if (!gameState.gameActive) return;
+                
+                const key = e.key.toLowerCase();
+                const colorMap = {
+                    'r': 'red',
+                    'b': 'blue',
+                    'g': 'green',
+                    'y': 'yellow',
+                    'p': 'purple',
+                    'o': 'orange'
+                };
+                
+                if (colorMap[key]) {
+                    // Select the color
+                    elements.colorOptions.forEach(opt => opt.classList.remove('selected'));
+                    document.querySelector(`.color-option.${colorMap[key]}`).classList.add('selected');
+                } else if (e.key === 'Enter') {
+                    submitGuess();
+                }
+            });
+        }
+
+        // Initialize the game when page loads
+        window.onload = initGame;
+    </script>
+</body>
+</html>
